@@ -10,6 +10,9 @@ MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent), ui(new Ui::MainWindow) {
   ui->setupUi(this);
 
+  // 清除QComboBox的QAbstractItemView::item默认QSS
+  ui->ipv4Box->setView(new QListView());
+
   connect(ui->openSocketButton, &QPushButton::clicked, this,
           &MainWindow::onOpenSocketButton);
 }

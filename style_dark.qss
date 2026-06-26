@@ -1,0 +1,99 @@
+/* ============================================
+   TaskDispatcher — 暗色主题
+   主色调:#007AFF (blue accent)
+   ============================================ */
+
+/* ====== 全局背景 ====== */
+QMainWindow {
+        background-color:#1E1E2E;
+}
+QDialog {
+        background-color:#242436;
+}
+QLabel {
+        color:#D4D4D4;
+}
+QMenuBar {
+        background-color:#1E1E2E;
+        color:#D4D4D4;
+        border-bottom:1px solid #404058;
+}
+QMenuBar::item:selected {
+        background-color:rgba(0,122,255,0.18);
+}
+/* ====== QComboBox ====== */
+QComboBox {
+        background-color:#28283C;
+        color:#D4D4D4;
+        border:1px solid #404058;
+        padding:3px 7px;
+        border-radius:3px;
+}
+QComboBox::drop-down {
+        subcontrol-origin:padding;
+        subcontrol-position:top right;
+        width:30px;
+        border-left:1px solid #404058;
+}
+QComboBox::down-arrow {
+        image:url(:/combox_arrow.png);
+        width:16px;
+        height:16px;
+}
+QComboBox:hover {
+        border-color:#007AFF;
+}
+QComboBox::drop-down:hover {
+        border-color:#007AFF;
+}
+QComboBox::down-arrow:hover {
+        image:url(:/combox_arrow_007aff.png);
+}
+QComboBox QAbstractItemView {
+        border:1px solid #007AFF;
+        background:#28283C;
+        color:#D4D4D4;
+        selection-color:#FFFFFF;
+        outline:0;
+}
+QComboBox QAbstractItemView::item:selected {
+        background-color:#007AFF;
+        color:#FFFFFF;
+}
+QComboBox QAbstractItemView::item:hover {
+        background-color:rgba(0,122,255,0.22);
+        color:#D4D4D4;
+}
+QComboBox:disabled {
+        background-color:#333348;
+        color:#707080;
+        border-color:#505060;
+}
+/* ====== QPushButton ====== */
+QPushButton {
+        background:qlineargradient(x1:0,y1:0,x2:0,y2:1,stop:0 #007AFF,stop:1 #0060DB);
+        color:#FFFFFF;
+        border:none;
+        padding:5px 10px;
+        border-radius:4px;
+}
+QPushButton:hover {
+        background:qlineargradient(x1:0,y1:0,x2:0,y2:1,stop:0 #0070EA,stop:1 #0056CC);
+}
+QPushButton:pressed {
+        background:qlineargradient(x1:0,y1:0,x2:0,y2:1,stop:0 #0060DB,stop:1 #004AAD);
+}
+QPushButton:disabled {
+        background:qlineargradient(x1:0,y1:0,x2:0,y2:1,stop:0 #505068,stop:1 #44445A);
+        color:#909090;
+}
+/* 取消按钮 */
+QPushButton#cancelButton {
+        background:qlineargradient(x1:0,y1:0,x2:0,y2:1,stop:0 #3A3A50,stop:1 #2E2E42);
+        color:#D4D4D4;
+        border:1px solid #505068;
+}
+QPushButton#cancelButton:hover {
+        background:qlineargradient(x1:0,y1:0,x2:0,y2:1,stop:0 #454560,stop:1 #38384E);
+        border-color:#007AFF;
+}

@@ -1,5 +1,7 @@
 <RCC>
     <qresource prefix="/">
+        <file>combox_arrow.png</file>
+        <file>combox_arrow_007aff.png</file>
         <file>socket_listening.png</file>
         <file>socket_shutdown.png</file>
     </qresource>
