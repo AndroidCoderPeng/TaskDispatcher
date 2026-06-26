@@ -1,0 +1,6 @@
+#ifndef GLOBALDEFINITION_HPP
+#define GLOBALDEFINITION_HPP
+
+enum class WebSocketState { RUNNING, SHUTDOWN };
+
+#endif // GLOBALDEFINITION_HPP

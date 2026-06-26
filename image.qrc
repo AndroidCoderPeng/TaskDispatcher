@@ -1,0 +1,6 @@
+<RCC>
+    <qresource prefix="/">
+        <file>socket_listening.png</file>
+        <file>socket_shutdown.png</file>
+    </qresource>
+</RCC>
