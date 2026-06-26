@@ -40,7 +40,7 @@
                     <number>8</number>
                 </property>
                 <item>
-                    <layout class="QVBoxLayout" name="verticalLayout" stretch="0,0,0">
+                    <layout class="QVBoxLayout" name="verticalLayout" stretch="0,0">
                         <property name="spacing">
                             <number>8</number>
                         </property>
@@ -55,21 +55,7 @@
                                             <number>8</number>
                                         </property>
                                         <item>
-                                            <widget class="QLabel" name="weekDayLabel">
-                                                <property name="font">
-                                                    <font>
-                                                        <family>汉仪中圆B5</family>
-                                                        <pointsize>24</pointsize>
-                                                        <bold>true</bold>
-                                                    </font>
-                                                </property>
-                                                <property name="text">
-                                                    <string>星期一</string>
-                                                </property>
-                                            </widget>
-                                        </item>
-                                        <item>
-                                            <widget class="QLabel" name="timeLabel">
+                                            <widget class="QLabel" name="dateLabel">
                                                 <property name="font">
                                                     <font>
                                                         <family>汉仪中圆B5</family>
@@ -78,17 +64,10 @@
                                                     </font>
                                                 </property>
                                                 <property name="text">
-                                                    <string>2026年6月26日 17:00:00</string>
+                                                    <string>2026年6月26日 | 星期一</string>
                                                 </property>
                                             </widget>
                                         </item>
-                                    </layout>
-                                </item>
-                                <item>
-                                    <layout class="QVBoxLayout" name="verticalLayout_3">
-                                        <property name="spacing">
-                                            <number>8</number>
-                                        </property>
                                         <item>
                                             <widget class="QLabel" name="countDownLabel">
                                                 <property name="text">
@@ -96,60 +75,19 @@
                                                 </property>
                                             </widget>
                                         </item>
-                                        <item>
-                                            <widget class="QProgressBar" name="progressBar">
-                                                <property name="value">
-                                                    <number>0</number>
-                                                </property>
-                                            </widget>
-                                        </item>
                                     </layout>
                                 </item>
-                            </layout>
-                        </item>
-                        <item>
-                            <layout class="QHBoxLayout" name="horizontalLayout_3">
-                                <property name="spacing">
-                                    <number>8</number>
-                                </property>
                                 <item>
-                                    <widget class="QLabel" name="label">
+                                    <widget class="QLabel" name="timeLabel">
+                                        <property name="font">
+                                            <font>
+                                                <family>IQYHT Black</family>
+                                                <pointsize>24</pointsize>
+                                                <bold>true</bold>
+                                            </font>
+                                        </property>
                                         <property name="text">
-                                            <string>任务通知渠道</string>
-                                        </property>
-                                    </widget>
-                                </item>
-                                <item>
-                                    <widget class="QRadioButton" name="emailRadioButton">
-                                        <property name="text">
-                                            <string>邮箱</string>
-                                        </property>
-                                    </widget>
-                                </item>
-                                <item>
-                                    <widget class="QRadioButton" name="radioButton">
-                                        <property name="text">
-                                            <string>企业微信</string>
-                                        </property>
-                                    </widget>
-                                </item>
-                                <item>
-                                    <spacer name="horizontalSpacer_2">
-                                        <property name="orientation">
-                                            <enum>Qt::Horizontal</enum>
-                                        </property>
-                                        <property name="sizeHint" stdset="0">
-                                            <size>
-                                                <width>40</width>
-                                                <height>20</height>
-                                            </size>
-                                        </property>
-                                    </spacer>
-                                </item>
-                                <item>
-                                    <widget class="QPushButton" name="testNoticeButton">
-                                        <property name="text">
-                                            <string>测试渠道</string>
+                                            <string>00:00:00</string>
                                         </property>
                                     </widget>
                                 </item>
@@ -255,7 +193,7 @@
                     <x>0</x>
                     <y>0</y>
                     <width>500</width>
-                    <height>21</height>
+                    <height>20</height>
                 </rect>
             </property>
             <widget class="QMenu" name="menuFile">
@@ -298,6 +236,9 @@
                 <property name="title">
                     <string>帮助(&amp;H)</string>
                 </property>
+                <addaction name="actionTestEmail"/>
+                <addaction name="actionTextWx"/>
+                <addaction name="separator"/>
                 <addaction name="actionQuestion"/>
                 <addaction name="separator"/>
                 <addaction name="actionProjectSite"/>
@@ -408,6 +349,21 @@
         <action name="actionSyncData">
             <property name="text">
                 <string>同步节假日数据</string>
+            </property>
+        </action>
+        <action name="actionTestEmail">
+            <property name="text">
+                <string>测试邮箱通知</string>
+            </property>
+        </action>
+        <action name="actionTextWx">
+            <property name="text">
+                <string>测试企业微信通知</string>
+            </property>
+        </action>
+        <action name="actionQuestion">
+            <property name="text">
+                <string>常见问题</string>
             </property>
         </action>
         <action name="actionQuestion">

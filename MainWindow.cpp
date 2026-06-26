@@ -5,10 +5,20 @@
 #include "WebSocketObserver.hpp"
 
 #include <QMessageBox>
+#include <QTimer>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent), ui(new Ui::MainWindow) {
   ui->setupUi(this);
+
+  // 自动更新日期和星期、显示当前时间
+  QTimer *timer = new QTimer(this);
+  connect(timer, &QTimer::timeout, this, [this]() {
+    ui->dateLabel->setText(
+        QDate::currentDate().toString("yyyy年MM月dd | dddd"));
+    ui->timeLabel->setText(QDateTime::currentDateTime().toString("HH:mm:ss"));
+  });
+  timer->start(1000);
 
   // 清除QComboBox的QAbstractItemView::item默认QSS
   ui->ipv4Box->setView(new QListView());
