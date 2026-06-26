@@ -6,20 +6,20 @@
             <rect>
                 <x>0</x>
                 <y>0</y>
-                <width>400</width>
-                <height>600</height>
+                <width>500</width>
+                <height>400</height>
             </rect>
         </property>
         <property name="minimumSize">
             <size>
-                <width>400</width>
-                <height>600</height>
+                <width>500</width>
+                <height>400</height>
             </size>
         </property>
         <property name="maximumSize">
             <size>
-                <width>400</width>
-                <height>600</height>
+                <width>500</width>
+                <height>400</height>
             </size>
         </property>
         <widget class="QWidget" name="centralWidget">
@@ -55,14 +55,28 @@
                                             <number>8</number>
                                         </property>
                                         <item>
-                                            <widget class="QLabel" name="label">
+                                            <widget class="QLabel" name="weekDayLabel">
+                                                <property name="font">
+                                                    <font>
+                                                        <family>汉仪中圆B5</family>
+                                                        <pointsize>24</pointsize>
+                                                        <bold>true</bold>
+                                                    </font>
+                                                </property>
                                                 <property name="text">
                                                     <string>星期一</string>
                                                 </property>
                                             </widget>
                                         </item>
                                         <item>
-                                            <widget class="QLabel" name="label">
+                                            <widget class="QLabel" name="timeLabel">
+                                                <property name="font">
+                                                    <font>
+                                                        <family>汉仪中圆B5</family>
+                                                        <pointsize>12</pointsize>
+                                                        <bold>true</bold>
+                                                    </font>
+                                                </property>
                                                 <property name="text">
                                                     <string>2026年6月26日 17:00:00</string>
                                                 </property>
@@ -71,11 +85,25 @@
                                     </layout>
                                 </item>
                                 <item>
-                                    <widget class="QLabel" name="label">
-                                        <property name="text">
-                                            <string>06小时45分钟后刷新每日任务</string>
+                                    <layout class="QVBoxLayout" name="verticalLayout_3">
+                                        <property name="spacing">
+                                            <number>8</number>
                                         </property>
-                                    </widget>
+                                        <item>
+                                            <widget class="QLabel" name="countDownLabel">
+                                                <property name="text">
+                                                    <string>06小时59分钟后刷新每日任务</string>
+                                                </property>
+                                            </widget>
+                                        </item>
+                                        <item>
+                                            <widget class="QProgressBar" name="progressBar">
+                                                <property name="value">
+                                                    <number>0</number>
+                                                </property>
+                                            </widget>
+                                        </item>
+                                    </layout>
                                 </item>
                             </layout>
                         </item>
@@ -128,7 +156,7 @@
                             </layout>
                         </item>
                         <item>
-                            <layout class="QVBoxLayout" name="verticalLayout_3">
+                            <layout class="QVBoxLayout" name="verticalLayout_4">
                                 <property name="spacing">
                                     <number>8</number>
                                 </property>
@@ -138,7 +166,7 @@
                                             <number>8</number>
                                         </property>
                                         <item>
-                                            <widget class="QLabel" name="label_2">
+                                            <widget class="QLabel" name="taskCountLabel">
                                                 <property name="text">
                                                     <string>今日任务（1/4）</string>
                                                 </property>
@@ -226,8 +254,8 @@
                 <rect>
                     <x>0</x>
                     <y>0</y>
-                    <width>600</width>
-                    <height>22</height>
+                    <width>500</width>
+                    <height>21</height>
                 </rect>
             </property>
             <widget class="QMenu" name="menuFile">
