@@ -25,10 +25,34 @@ public slots:
 
   void slotDataReceived(const QString &message);
 
-private slots:
-  void onOpenSocketButton();
-
 private:
   Ui::MainWindow *ui;
+
+  // ====== 菜单栏 ======
+  void onActionImportDataClicked();
+  void onActionExportDataClicked();
+  void onActionCloseClicked();
+
+  void onActionEmailSettingClicked();
+  void onActionWeWorkSettingClicked();
+  void onActionOvertimeSettingClicked();
+  void onActionResetTaskSettingClicked();
+  void onActionRandomTimeSettingClicked();
+  void onActionSkipHolidaySettingToggled(bool checked);
+  void onActionOpenResetTaskSettingToggled(bool checked);
+  void onActionOpenRandomTimeSettingToggled(bool checked);
+
+  void onActionDarkThemeToggled(bool checked);
+
+  void onActionSyncDataClicked();
+
+  void onActionTestEmailClicked();
+  void onActionTextWxClicked();
+  void onActionQuestionClicked();
+  void onActionProjectSiteTriggered();
+  void onActionAboutTriggered();
+
+  void onAddTaskButtonClicked();
+  void onOpenSocketButtonClicked();
 };
 #endif // MAINWINDOW_HPP
