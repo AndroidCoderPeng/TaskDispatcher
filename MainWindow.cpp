@@ -203,22 +203,42 @@ void MainWindow::onActionResetTaskSettingClicked() {
 }
 
 void MainWindow::onActionRandomTimeSettingClicked() {
-  Logger::Tag("MainWindow").d("Random time setting action clicked");
+  int defaultValue = 5; // 默认 5 分钟
+  QJsonObject saved = ConfigStore::get().load("randomTimeConfig");
+  if (saved.contains("minutes")) {
+    defaultValue = saved["minutes"].toInt();
+  }
+
+  bool ok = false;
+  const int minutes =
+      QInputDialog::getInt(this, "任务波动时间", "请输入任务波动时间（分钟）",
+                           defaultValue, 3, 30, 1, &ok);
+
+  if (ok) {
+    QJsonObject obj;
+    obj["minutes"] = minutes;
+    ConfigStore::get().save("randomTimeConfig", obj);
+    QMessageBox::information(
+        this, "提示", QString("任务波动时间已设置为 %1 分钟").arg(minutes));
+  }
 }
 
 void MainWindow::onActionSkipHolidaySettingToggled(bool checked) {
-  Logger::Tag("MainWindow")
-      .dFmt("Skip holiday setting toggled: %s", checked ? "true" : "false");
+  QJsonObject obj;
+  obj["skipHoliday"] = checked;
+  ConfigStore::get().save("skipHolidayConfig", obj);
 }
 
 void MainWindow::onActionOpenResetTaskSettingToggled(bool checked) {
-  Logger::Tag("MainWindow")
-      .dFmt("Open reset task setting toggled: %s", checked ? "true" : "false");
+  QJsonObject obj;
+  obj["openResetTask"] = checked;
+  ConfigStore::get().save("openResetTaskConfig", obj);
 }
 
 void MainWindow::onActionOpenRandomTimeSettingToggled(bool checked) {
-  Logger::Tag("MainWindow")
-      .dFmt("Open random time setting toggled: %s", checked ? "true" : "false");
+  QJsonObject obj;
+  obj["openRandomTime"] = checked;
+  ConfigStore::get().save("openRandomTimeConfig", obj);
 }
 
 void MainWindow::onActionDarkThemeToggled(bool checked) {
