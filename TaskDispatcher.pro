@@ -13,6 +13,7 @@ CONFIG += c++11
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
+    EmailSettingDialog.cpp \
     Logger.cpp \
     DispatcherApplication.cpp \
     WebSocketObserver.cpp \
@@ -20,6 +21,7 @@ SOURCES += \
     MainWindow.cpp
 
 HEADERS += \
+    EmailSettingDialog.hpp \
     GlobalDefinition.hpp \
     Logger.hpp \
     DispatcherApplication.hpp \
@@ -27,6 +29,7 @@ HEADERS += \
     WebSocketObserver.hpp
 
 FORMS += \
+    EmailSettingDialog.ui \
     MainWindow.ui
 
 RESOURCES += \

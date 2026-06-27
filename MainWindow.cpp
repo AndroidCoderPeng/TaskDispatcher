@@ -1,6 +1,7 @@
 #include "MainWindow.hpp"
 #include "ui_MainWindow.h"
 
+#include "EmailSettingDialog.hpp"
 #include "Logger.hpp"
 #include "WebSocketObserver.hpp"
 
@@ -84,7 +85,31 @@ void MainWindow::onActionImportDataClicked() {
 }
 
 void MainWindow::onActionExportDataClicked() {
-  Logger::Tag("MainWindow").d("Import data action clicked");
+  // if (history.isEmpty()) {
+  //   QMessageBox::warning(this, "警告", "没有数据可以保存");
+  //   return;
+  // }
+  // const QString filePath =
+  //     QFileDialog::getSaveFileName(this, "保存日志", "", "文本文件 (*.txt)");
+  // if (filePath.isEmpty()) {
+  //   QMessageBox::warning(this, "警告", "未选择保存文件");
+  //   return;
+  // }
+  // QFile file(filePath);
+  // if (!file.open(QIODevice::WriteOnly | QIODevice::Text |
+  //                QIODevice::Truncate)) {
+  //   QMessageBox::critical(this, "错误", "无法打开文件：" +
+  //   file.errorString()); return;
+  // }
+  // QTextStream out(&file);
+  // const QList<PortMessage> &listRef = history;
+  // for (const auto &msg : listRef) {
+  //   const QString hexData = Utils::formatByteArray(msg.data);
+  //   const auto line = QString("[%1]【%2】%3\n")
+  //                         .arg(msg.formattedTime, msg.direction, hexData);
+  //   out << line;
+  // }
+  // file.close();
 }
 
 void MainWindow::onActionCloseClicked() {
@@ -96,7 +121,18 @@ void MainWindow::onActionCloseClicked() {
 }
 
 void MainWindow::onActionEmailSettingClicked() {
-  Logger::Tag("MainWindow").d("Email setting action clicked");
+  EmailSettingDialog dialog(this);
+  if (dialog.exec() == QDialog::Accepted) {
+    const auto result = dialog.getInputValue();
+    if (result.first) {
+      const EmailConfig &cfg = result.second;
+      // TODO: 使用 cfg 保存邮箱配置
+      Logger::Tag("MainWindow")
+          .dFmt("Email config saved: sender=%s, receiver=%s",
+                cfg.senderEmail.toStdString().c_str(),
+                cfg.receiverEmail.toStdString().c_str());
+    }
+  }
 }
 
 void MainWindow::onActionWeWorkSettingClicked() {

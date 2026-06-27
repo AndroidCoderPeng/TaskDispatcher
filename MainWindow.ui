@@ -1,407 +1,407 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
-    <class>MainWindow</class>
-    <widget class="QMainWindow" name="MainWindow">
-        <property name="geometry">
-            <rect>
-                <x>0</x>
-                <y>0</y>
-                <width>500</width>
-                <height>400</height>
-            </rect>
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>500</width>
+    <height>400</height>
+   </rect>
+  </property>
+  <property name="minimumSize">
+   <size>
+    <width>500</width>
+    <height>400</height>
+   </size>
+  </property>
+  <property name="maximumSize">
+   <size>
+    <width>500</width>
+    <height>400</height>
+   </size>
+  </property>
+  <widget class="QWidget" name="centralWidget">
+   <layout class="QVBoxLayout" name="rootLayout" stretch="1,0">
+    <property name="spacing">
+     <number>8</number>
+    </property>
+    <property name="leftMargin">
+     <number>8</number>
+    </property>
+    <property name="topMargin">
+     <number>8</number>
+    </property>
+    <property name="rightMargin">
+     <number>8</number>
+    </property>
+    <property name="bottomMargin">
+     <number>8</number>
+    </property>
+    <item>
+     <layout class="QVBoxLayout" name="verticalLayout" stretch="0,0">
+      <property name="spacing">
+       <number>8</number>
+      </property>
+      <item>
+       <layout class="QHBoxLayout" name="horizontalLayout_2" stretch="1,0">
+        <property name="spacing">
+         <number>8</number>
         </property>
+        <item>
+         <layout class="QVBoxLayout" name="verticalLayout_2">
+          <property name="spacing">
+           <number>8</number>
+          </property>
+          <item>
+           <widget class="QLabel" name="dateLabel">
+            <property name="font">
+             <font>
+              <family>汉仪中圆B5</family>
+              <pointsize>12</pointsize>
+              <bold>true</bold>
+             </font>
+            </property>
+            <property name="text">
+             <string>2026年6月26日 | 星期一</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLabel" name="countDownLabel">
+            <property name="text">
+             <string>06小时59分钟后刷新每日任务</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <widget class="QLabel" name="timeLabel">
+          <property name="font">
+           <font>
+            <family>IQYHT Black</family>
+            <pointsize>24</pointsize>
+            <bold>true</bold>
+           </font>
+          </property>
+          <property name="text">
+           <string>00:00:00</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <layout class="QVBoxLayout" name="verticalLayout_4">
+        <property name="spacing">
+         <number>8</number>
+        </property>
+        <item>
+         <layout class="QHBoxLayout" name="horizontalLayout_4" stretch="1,0">
+          <property name="spacing">
+           <number>8</number>
+          </property>
+          <item>
+           <widget class="QLabel" name="taskCountLabel">
+            <property name="text">
+             <string>今日任务（1/4）</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="addTaskButton">
+            <property name="text">
+             <string>添加任务</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <widget class="QListWidget" name="listWidget"/>
+        </item>
+       </layout>
+      </item>
+     </layout>
+    </item>
+    <item>
+     <layout class="QHBoxLayout" name="horizontalLayout">
+      <property name="spacing">
+       <number>8</number>
+      </property>
+      <item>
+       <widget class="QLabel" name="socketIconView">
         <property name="minimumSize">
-            <size>
-                <width>500</width>
-                <height>400</height>
-            </size>
+         <size>
+          <width>24</width>
+          <height>24</height>
+         </size>
         </property>
         <property name="maximumSize">
-            <size>
-                <width>500</width>
-                <height>400</height>
-            </size>
+         <size>
+          <width>24</width>
+          <height>24</height>
+         </size>
         </property>
-        <widget class="QWidget" name="centralWidget">
-            <layout class="QVBoxLayout" name="rootLayout" stretch="1,0">
-                <property name="spacing">
-                    <number>8</number>
-                </property>
-                <property name="leftMargin">
-                    <number>8</number>
-                </property>
-                <property name="topMargin">
-                    <number>8</number>
-                </property>
-                <property name="rightMargin">
-                    <number>8</number>
-                </property>
-                <property name="bottomMargin">
-                    <number>8</number>
-                </property>
-                <item>
-                    <layout class="QVBoxLayout" name="verticalLayout" stretch="0,0">
-                        <property name="spacing">
-                            <number>8</number>
-                        </property>
-                        <item>
-                            <layout class="QHBoxLayout" name="horizontalLayout_2" stretch="1,0">
-                                <property name="spacing">
-                                    <number>8</number>
-                                </property>
-                                <item>
-                                    <layout class="QVBoxLayout" name="verticalLayout_2">
-                                        <property name="spacing">
-                                            <number>8</number>
-                                        </property>
-                                        <item>
-                                            <widget class="QLabel" name="dateLabel">
-                                                <property name="font">
-                                                    <font>
-                                                        <family>汉仪中圆B5</family>
-                                                        <pointsize>12</pointsize>
-                                                        <bold>true</bold>
-                                                    </font>
-                                                </property>
-                                                <property name="text">
-                                                    <string>2026年6月26日 | 星期一</string>
-                                                </property>
-                                            </widget>
-                                        </item>
-                                        <item>
-                                            <widget class="QLabel" name="countDownLabel">
-                                                <property name="text">
-                                                    <string>06小时59分钟后刷新每日任务</string>
-                                                </property>
-                                            </widget>
-                                        </item>
-                                    </layout>
-                                </item>
-                                <item>
-                                    <widget class="QLabel" name="timeLabel">
-                                        <property name="font">
-                                            <font>
-                                                <family>IQYHT Black</family>
-                                                <pointsize>24</pointsize>
-                                                <bold>true</bold>
-                                            </font>
-                                        </property>
-                                        <property name="text">
-                                            <string>00:00:00</string>
-                                        </property>
-                                    </widget>
-                                </item>
-                            </layout>
-                        </item>
-                        <item>
-                            <layout class="QVBoxLayout" name="verticalLayout_4">
-                                <property name="spacing">
-                                    <number>8</number>
-                                </property>
-                                <item>
-                                    <layout class="QHBoxLayout" name="horizontalLayout_4" stretch="1,0">
-                                        <property name="spacing">
-                                            <number>8</number>
-                                        </property>
-                                        <item>
-                                            <widget class="QLabel" name="taskCountLabel">
-                                                <property name="text">
-                                                    <string>今日任务（1/4）</string>
-                                                </property>
-                                            </widget>
-                                        </item>
-                                        <item>
-                                            <widget class="QPushButton" name="addTaskButton">
-                                                <property name="text">
-                                                    <string>添加任务</string>
-                                                </property>
-                                            </widget>
-                                        </item>
-                                    </layout>
-                                </item>
-                                <item>
-                                    <widget class="QListWidget" name="listWidget"/>
-                                </item>
-                            </layout>
-                        </item>
-                    </layout>
-                </item>
-                <item>
-                    <layout class="QHBoxLayout" name="horizontalLayout">
-                        <property name="spacing">
-                            <number>8</number>
-                        </property>
-                        <item>
-                            <widget class="QLabel" name="socketIconView">
-                                <property name="minimumSize">
-                                    <size>
-                                        <width>24</width>
-                                        <height>24</height>
-                                    </size>
-                                </property>
-                                <property name="maximumSize">
-                                    <size>
-                                        <width>24</width>
-                                        <height>24</height>
-                                    </size>
-                                </property>
-                                <property name="pixmap">
-                                    <pixmap resource="image.qrc">:/socket_shutdown.png</pixmap>
-                                </property>
-                                <property name="scaledContents">
-                                    <bool>true</bool>
-                                </property>
-                            </widget>
-                        </item>
-                        <item>
-                            <widget class="QLabel" name="socketStateView">
-                                <property name="text">
-                                    <string>通信服务未启动</string>
-                                </property>
-                            </widget>
-                        </item>
-                        <item>
-                            <spacer name="horizontalSpacer">
-                                <property name="orientation">
-                                    <enum>Qt::Horizontal</enum>
-                                </property>
-                                <property name="sizeHint" stdset="0">
-                                    <size>
-                                        <width>0</width>
-                                        <height>0</height>
-                                    </size>
-                                </property>
-                            </spacer>
-                        </item>
-                        <item>
-                            <widget class="QComboBox" name="ipv4Box"/>
-                        </item>
-                        <item>
-                            <widget class="QPushButton" name="openSocketButton">
-                                <property name="text">
-                                    <string>启动通讯服务</string>
-                                </property>
-                            </widget>
-                        </item>
-                    </layout>
-                </item>
-            </layout>
-        </widget>
-        <widget class="QMenuBar" name="menuBar">
-            <property name="geometry">
-                <rect>
-                    <x>0</x>
-                    <y>0</y>
-                    <width>500</width>
-                    <height>20</height>
-                </rect>
-            </property>
-            <widget class="QMenu" name="menuFile">
-                <property name="title">
-                    <string>文件(&amp;F)</string>
-                </property>
-                <addaction name="actionImportData"/>
-                <addaction name="actionExportData"/>
-                <addaction name="separator"/>
-                <addaction name="actionExit"/>
-            </widget>
-            <widget class="QMenu" name="menuSettings">
-                <property name="title">
-                    <string>设置(&amp;S)</string>
-                </property>
-                <addaction name="actionEmailSetting"/>
-                <addaction name="actionWeWorkSetting"/>
-                <addaction name="separator"/>
-                <addaction name="actionTaskOvertimeSetting"/>
-                <addaction name="actionResetTaskSetting"/>
-                <addaction name="actionRandomTimeSetting"/>
-                <addaction name="separator"/>
-                <addaction name="actionSkipHolidaySetting"/>
-                <addaction name="actionOpenResetTaskSetting"/>
-                <addaction name="actionOpenRandomTimeSetting"/>
-            </widget>
-            <widget class="QMenu" name="menuView">
-                <property name="title">
-                    <string>视图(&amp;V)</string>
-                </property>
-                <addaction name="actionDarkTheme"/>
-            </widget>
-            <widget class="QMenu" name="menuData">
-                <property name="title">
-                    <string>数据(&amp;D)</string>
-                </property>
-                <addaction name="actionSyncData"/>
-            </widget>
-            <widget class="QMenu" name="menuCommand">
-                <property name="title">
-                    <string>指令(&amp;C)</string>
-                </property>
-                <addaction name="actionCaptureScreen"/>
-                <addaction name="actionOpenTargetApp"/>
-            </widget>
-            <widget class="QMenu" name="menuHelp">
-                <property name="title">
-                    <string>帮助(&amp;H)</string>
-                </property>
-                <addaction name="actionTestEmail"/>
-                <addaction name="actionTextWx"/>
-                <addaction name="separator"/>
-                <addaction name="actionQuestion"/>
-                <addaction name="separator"/>
-                <addaction name="actionProjectSite"/>
-                <addaction name="actionAbout"/>
-            </widget>
-            <addaction name="menuFile"/>
-            <addaction name="menuSettings"/>
-            <addaction name="menuView"/>
-            <addaction name="menuData"/>
-            <addaction name="menuCommand"/>
-            <addaction name="menuHelp"/>
-        </widget>
-        <action name="actionImportData">
-            <property name="text">
-                <string>导入数据(&amp;I)</string>
-            </property>
-            <property name="shortcut">
-                <string>Ctrl+I</string>
-            </property>
-        </action>
-        <action name="actionExportData">
-            <property name="text">
-                <string>导出数据(&amp;E)</string>
-            </property>
-            <property name="shortcut">
-                <string>Ctrl+E</string>
-            </property>
-        </action>
-        <action name="actionExit">
-            <property name="text">
-                <string>退出(&amp;Q)</string>
-            </property>
-            <property name="shortcut">
-                <string>Ctrl+Q</string>
-            </property>
-        </action>
-        <action name="actionEmailSetting">
-            <property name="text">
-                <string>设置邮箱</string>
-            </property>
-        </action>
-        <action name="actionWeWorkSetting">
-            <property name="text">
-                <string>设置企业微信</string>
-            </property>
-        </action>
-        <action name="actionTaskOvertimeSetting">
-            <property name="text">
-                <string>设置任务超时时间(&amp;T)</string>
-            </property>
-            <property name="shortcut">
-                <string>Ctrl+T</string>
-            </property>
-        </action>
-        <action name="actionResetTaskSetting">
-            <property name="text">
-                <string>设置任务重置时间(&amp;R)</string>
-            </property>
-            <property name="shortcut">
-                <string>Ctrl+R</string>
-            </property>
-        </action>
-        <action name="actionRandomTimeSetting">
-            <property name="text">
-                <string>设置任务随机时间</string>
-            </property>
-        </action>
-        <action name="actionSkipHolidaySetting">
-            <property name="checkable">
-                <bool>true</bool>
-            </property>
-            <property name="checked">
-                <bool>true</bool>
-            </property>
-            <property name="text">
-                <string>跳过节假日</string>
-            </property>
-        </action>
-        <action name="actionOpenResetTaskSetting">
-            <property name="checkable">
-                <bool>true</bool>
-            </property>
-            <property name="checked">
-                <bool>true</bool>
-            </property>
-            <property name="text">
-                <string>重置任务</string>
-            </property>
-        </action>
-        <action name="actionOpenRandomTimeSetting">
-            <property name="checkable">
-                <bool>true</bool>
-            </property>
-            <property name="checked">
-                <bool>true</bool>
-            </property>
-            <property name="text">
-                <string>随机时间</string>
-            </property>
-        </action>
-        <action name="actionDarkTheme">
-            <property name="checkable">
-                <bool>true</bool>
-            </property>
-            <property name="text">
-                <string>暗色主题</string>
-            </property>
-        </action>
-        <action name="actionSyncData">
-            <property name="text">
-                <string>同步节假日数据</string>
-            </property>
-        </action>
-        <action name="actionCaptureScreen">
-            <property name="text">
-                <string>截屏</string>
-            </property>
-        </action>
-        <action name="actionOpenTargetApp">
-            <property name="text">
-                <string>打开目标应用</string>
-            </property>
-        </action>
-        <action name="actionTestEmail">
-            <property name="text">
-                <string>测试邮箱通知</string>
-            </property>
-        </action>
-        <action name="actionTextWx">
-            <property name="text">
-                <string>测试企业微信通知</string>
-            </property>
-        </action>
-        <action name="actionQuestion">
-            <property name="text">
-                <string>常见问题</string>
-            </property>
-        </action>
-        <action name="actionQuestion">
-            <property name="text">
-                <string>常见问题</string>
-            </property>
-        </action>
-        <action name="actionProjectSite">
-            <property name="text">
-                <string>项目主页(&amp;P)</string>
-            </property>
-        </action>
-        <action name="actionAbout">
-            <property name="text">
-                <string>关于</string>
-            </property>
-        </action>
-    </widget>
-    <resources>
-        <include location="image.qrc"/>
-    </resources>
-    <connections/>
+        <property name="pixmap">
+         <pixmap resource="image.qrc">:/socket_shutdown.png</pixmap>
+        </property>
+        <property name="scaledContents">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLabel" name="socketStateView">
+        <property name="text">
+         <string>通信服务未启动</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <spacer name="horizontalSpacer">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>0</width>
+          <height>0</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
+      <item>
+       <widget class="QComboBox" name="ipv4Box"/>
+      </item>
+      <item>
+       <widget class="QPushButton" name="openSocketButton">
+        <property name="text">
+         <string>启动通讯服务</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QMenuBar" name="menuBar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>500</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <widget class="QMenu" name="menuFile">
+    <property name="title">
+     <string>文件(&amp;F)</string>
+    </property>
+    <addaction name="actionImportData"/>
+    <addaction name="actionExportData"/>
+    <addaction name="separator"/>
+    <addaction name="actionExit"/>
+   </widget>
+   <widget class="QMenu" name="menuSettings">
+    <property name="title">
+     <string>设置(&amp;S)</string>
+    </property>
+    <addaction name="actionEmailSetting"/>
+    <addaction name="actionWeWorkSetting"/>
+    <addaction name="separator"/>
+    <addaction name="actionTaskOvertimeSetting"/>
+    <addaction name="actionResetTaskSetting"/>
+    <addaction name="actionRandomTimeSetting"/>
+    <addaction name="separator"/>
+    <addaction name="actionSkipHolidaySetting"/>
+    <addaction name="actionOpenResetTaskSetting"/>
+    <addaction name="actionOpenRandomTimeSetting"/>
+   </widget>
+   <widget class="QMenu" name="menuView">
+    <property name="title">
+     <string>视图(&amp;V)</string>
+    </property>
+    <addaction name="actionDarkTheme"/>
+   </widget>
+   <widget class="QMenu" name="menuData">
+    <property name="title">
+     <string>数据(&amp;D)</string>
+    </property>
+    <addaction name="actionSyncData"/>
+   </widget>
+   <widget class="QMenu" name="menuCommand">
+    <property name="title">
+     <string>指令(&amp;C)</string>
+    </property>
+    <addaction name="actionCaptureScreen"/>
+    <addaction name="actionOpenTargetApp"/>
+   </widget>
+   <widget class="QMenu" name="menuHelp">
+    <property name="title">
+     <string>帮助(&amp;H)</string>
+    </property>
+    <addaction name="actionTestEmail"/>
+    <addaction name="actionTextWx"/>
+    <addaction name="separator"/>
+    <addaction name="actionQuestion"/>
+    <addaction name="separator"/>
+    <addaction name="actionProjectSite"/>
+    <addaction name="actionAbout"/>
+   </widget>
+   <addaction name="menuFile"/>
+   <addaction name="menuSettings"/>
+   <addaction name="menuView"/>
+   <addaction name="menuData"/>
+   <addaction name="menuCommand"/>
+   <addaction name="menuHelp"/>
+  </widget>
+  <action name="actionImportData">
+   <property name="text">
+    <string>导入数据(&amp;I)</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+I</string>
+   </property>
+  </action>
+  <action name="actionExportData">
+   <property name="text">
+    <string>导出数据(&amp;E)</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+E</string>
+   </property>
+  </action>
+  <action name="actionExit">
+   <property name="text">
+    <string>退出(&amp;Q)</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Q</string>
+   </property>
+  </action>
+  <action name="actionEmailSetting">
+   <property name="text">
+    <string>邮箱</string>
+   </property>
+  </action>
+  <action name="actionWeWorkSetting">
+   <property name="text">
+    <string>企业微信</string>
+   </property>
+  </action>
+  <action name="actionTaskOvertimeSetting">
+   <property name="text">
+    <string>任务超时时间(&amp;T)</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+T</string>
+   </property>
+  </action>
+  <action name="actionResetTaskSetting">
+   <property name="text">
+    <string>任务重置时间(&amp;R)</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+R</string>
+   </property>
+  </action>
+  <action name="actionRandomTimeSetting">
+   <property name="text">
+    <string>任务随机时间</string>
+   </property>
+  </action>
+  <action name="actionSkipHolidaySetting">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>跳过节假日</string>
+   </property>
+  </action>
+  <action name="actionOpenResetTaskSetting">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>重置任务</string>
+   </property>
+  </action>
+  <action name="actionOpenRandomTimeSetting">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>随机时间</string>
+   </property>
+  </action>
+  <action name="actionDarkTheme">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>暗色主题</string>
+   </property>
+  </action>
+  <action name="actionSyncData">
+   <property name="text">
+    <string>同步节假日数据</string>
+   </property>
+  </action>
+  <action name="actionCaptureScreen">
+   <property name="text">
+    <string>截屏</string>
+   </property>
+  </action>
+  <action name="actionOpenTargetApp">
+   <property name="text">
+    <string>打开目标应用</string>
+   </property>
+  </action>
+  <action name="actionTestEmail">
+   <property name="text">
+    <string>测试邮箱通知</string>
+   </property>
+  </action>
+  <action name="actionTextWx">
+   <property name="text">
+    <string>测试企业微信通知</string>
+   </property>
+  </action>
+  <action name="actionQuestion">
+   <property name="text">
+    <string>常见问题</string>
+   </property>
+  </action>
+  <action name="actionQuestion">
+   <property name="text">
+    <string>常见问题</string>
+   </property>
+  </action>
+  <action name="actionProjectSite">
+   <property name="text">
+    <string>项目主页(&amp;P)</string>
+   </property>
+  </action>
+  <action name="actionAbout">
+   <property name="text">
+    <string>关于</string>
+   </property>
+  </action>
+ </widget>
+ <resources>
+  <include location="image.qrc"/>
+ </resources>
+ <connections/>
 </ui>
