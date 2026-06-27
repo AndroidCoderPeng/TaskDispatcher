@@ -1,5 +1,8 @@
 TARGET = TaskDispatcher
 TEMPLATE = app
+win32 {
+    RC_ICONS = application.ico
+}
 
 QT     += core gui widgets network websockets sql
 

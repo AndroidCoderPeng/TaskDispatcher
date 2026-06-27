@@ -56,6 +56,11 @@ MainWindow::MainWindow(QWidget *parent)
   connect(ui->actionSyncData, &QAction::triggered, this,
           &MainWindow::onActionSyncDataClicked);
 
+  connect(ui->actionCaptureScreen, &QAction::triggered, this,
+          &MainWindow::onActionCaptureScreenClicked);
+  connect(ui->actionOpenTargetApp, &QAction::triggered, this,
+          &MainWindow::onActionOpenTargetAppClicked);
+
   connect(ui->actionTestEmail, &QAction::triggered, this,
           &MainWindow::onActionTestEmailClicked);
   connect(ui->actionTextWx, &QAction::triggered, this,
@@ -145,6 +150,14 @@ void MainWindow::onActionSyncDataClicked() {
   Logger::Tag("MainWindow").d("Sync data action clicked");
 }
 
+void MainWindow::onActionCaptureScreenClicked() {
+  Logger::Tag("MainWindow").d("Capture screen action clicked");
+}
+
+void MainWindow::onActionOpenTargetAppClicked() {
+  Logger::Tag("MainWindow").d("Open target app action clicked");
+}
+
 void MainWindow::onActionTestEmailClicked() {
   Logger::Tag("MainWindow").d("Test email action clicked");
 }
@@ -163,15 +176,16 @@ void MainWindow::onActionProjectSiteTriggered() {
 }
 
 void MainWindow::onActionAboutTriggered() {
-  QMessageBox::about(this, "关于任务调度器",
+  QMessageBox::about(this, "关于",
                      "<h2>任务调度器 v1.0.0</h2>"
-                     "<p>基于 Qt 5 的跨平台任务调度工具</p>"
+                     "<p>基于 Qt 5 的跨平台工具</p>"
                      "<hr>"
                      "<p><b>作者：</b>AndroidCoderPeng</p>"
                      "<p><b>邮箱：</b><a "
                      "href='mailto:AndroidCoderPeng'>290677893@qq.com</a></p>"
                      "<hr>"
-                     "<p>支持 Windows / Linux / Mac 平台</p>");
+                     "<p>支持 Windows / Linux / Mac "
+                     "平台。Mac平台需要自行下载Qt编译链编译</p>");
 }
 
 void MainWindow::bindIpAddresses(const QList<QString> &ips) {

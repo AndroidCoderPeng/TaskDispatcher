@@ -232,6 +232,13 @@
                 </property>
                 <addaction name="actionSyncData"/>
             </widget>
+            <widget class="QMenu" name="menuCommand">
+                <property name="title">
+                    <string>指令(&amp;C)</string>
+                </property>
+                <addaction name="actionCaptureScreen"/>
+                <addaction name="actionOpenTargetApp"/>
+            </widget>
             <widget class="QMenu" name="menuHelp">
                 <property name="title">
                     <string>帮助(&amp;H)</string>
@@ -248,6 +255,7 @@
             <addaction name="menuSettings"/>
             <addaction name="menuView"/>
             <addaction name="menuData"/>
+            <addaction name="menuCommand"/>
             <addaction name="menuHelp"/>
         </widget>
         <action name="actionImportData">
@@ -349,6 +357,16 @@
         <action name="actionSyncData">
             <property name="text">
                 <string>同步节假日数据</string>
+            </property>
+        </action>
+        <action name="actionCaptureScreen">
+            <property name="text">
+                <string>截屏</string>
+            </property>
+        </action>
+        <action name="actionOpenTargetApp">
+            <property name="text">
+                <string>打开目标应用</string>
             </property>
         </action>
         <action name="actionTestEmail">

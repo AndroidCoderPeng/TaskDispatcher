@@ -46,6 +46,9 @@ private:
 
   void onActionSyncDataClicked();
 
+  void onActionCaptureScreenClicked();
+  void onActionOpenTargetAppClicked();
+
   void onActionTestEmailClicked();
   void onActionTextWxClicked();
   void onActionQuestionClicked();
