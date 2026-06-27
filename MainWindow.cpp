@@ -1,12 +1,14 @@
 #include "MainWindow.hpp"
 #include "ui_MainWindow.h"
 
+#include "ConfigStore.hpp"
 #include "EmailSettingDialog.hpp"
 #include "Logger.hpp"
 #include "WebSocketObserver.hpp"
 
 #include <QDesktopServices>
 #include <QFile>
+#include <QJsonObject>
 #include <QMessageBox>
 #include <QTimer>
 
@@ -126,11 +128,14 @@ void MainWindow::onActionEmailSettingClicked() {
     const auto result = dialog.getInputValue();
     if (result.first) {
       const EmailConfig &cfg = result.second;
-      // TODO: 使用 cfg 保存邮箱配置
-      Logger::Tag("MainWindow")
-          .dFmt("Email config saved: sender=%s, receiver=%s",
-                cfg.senderEmail.toStdString().c_str(),
-                cfg.receiverEmail.toStdString().c_str());
+
+      QJsonObject obj;
+      obj["emailTitle"] = cfg.emailTitle;
+      obj["senderEmail"] = cfg.senderEmail;
+      obj["authCode"] = cfg.authCode;
+      obj["receiverEmail"] = cfg.receiverEmail;
+      ConfigStore::get().save("emailConfig", obj);
+      QMessageBox::information(this, "提示", "邮箱配置已保存");
     }
   }
 }

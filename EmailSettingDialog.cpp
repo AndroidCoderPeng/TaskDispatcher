@@ -1,11 +1,26 @@
 #include "EmailSettingDialog.hpp"
 #include "ui_EmailSettingDialog.h"
 
+#include "ConfigStore.hpp"
+
 #include <QMessageBox>
 
 EmailSettingDialog::EmailSettingDialog(QWidget *parent)
     : QDialog(parent), ui(new Ui::EmailSettingDialog) {
   ui->setupUi(this);
+
+  const auto obj = ConfigStore::get().load("emailConfig");
+  if (!obj.isEmpty()) {
+    cfg.emailTitle = obj.value("emailTitle").toString();
+    cfg.senderEmail = obj.value("senderEmail").toString();
+    cfg.authCode = obj.value("authCode").toString();
+    cfg.receiverEmail = obj.value("receiverEmail").toString();
+
+    ui->emailTitleView->setText(cfg.emailTitle);
+    ui->senderEmailView->setText(cfg.senderEmail);
+    ui->authCodeView->setText(cfg.authCode);
+    ui->receiverEmailView->setText(cfg.receiverEmail);
+  }
 
   connect(ui->saveButton, &QPushButton::clicked, this,
           &EmailSettingDialog::onSaveCommandButtonClicked);
