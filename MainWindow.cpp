@@ -9,14 +9,17 @@
 #include "WebSocketObserver.hpp"
 #include "WxSettingDialog.hpp"
 
+#include <QCoreApplication>
 #include <QDesktopServices>
 #include <QDialog>
+#include <QDir>
 #include <QFile>
 #include <QHBoxLayout>
 #include <QInputDialog>
 #include <QJsonObject>
 #include <QLabel>
 #include <QMessageBox>
+#include <QProcess>
 #include <QPushButton>
 #include <QTimeEdit>
 #include <QTimer>
@@ -274,10 +277,65 @@ void MainWindow::onActionSyncDataClicked() {
 }
 
 void MainWindow::onActionCaptureScreenClicked() {
-  Logger::Tag("MainWindow").d("Capture screen action clicked");
+  // 确保 capture 目录存在
+  const QString captureDir =
+      QCoreApplication::applicationDirPath() + "/capture";
+  QDir dir(captureDir);
+  if (!dir.exists()) {
+    dir.mkpath(".");
+  }
+
+  // 生成带时间戳的文件名
+  const QString fileName =
+      QDateTime::currentDateTime().toString("yyyyMMdd_HHmmss") + ".png";
+  const QString filePath = captureDir + "/" + fileName;
+
+  // 通过 adb 截图并直接导出到本地文件
+  QProcess *process = new QProcess(this);
+  connect(
+      process, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
+      this, [this, process, filePath](int exitCode, QProcess::ExitStatus) {
+        process->deleteLater();
+
+        if (exitCode != 0) {
+          const QString err = process->readAllStandardError().trimmed();
+          QString tip;
+          if (err.contains("no devices")) {
+            tip = "未检测到已连接的 Android 设备，请检查 USB 连接或 adb 状态";
+          } else if (err.contains("more than one device")) {
+            tip = "检测到多个设备连接，请仅保留一台设备";
+          } else {
+            tip = err;
+          }
+          Logger::Tag("MainWindow")
+              .eFmt("Failed to capture screen: %s", tip.toStdString().c_str());
+          // TODO 发送邮件或者企业微信通知用户
+          return;
+        }
+
+        QFile file(filePath);
+        if (!file.open(QIODevice::WriteOnly)) {
+          Logger::Tag("MainWindow")
+              .eFmt("Failed to open capture file for writing: %s",
+                    filePath.toStdString().c_str());
+          QMessageBox::warning(this, "截图失败",
+                               "无法写入截图文件: " + filePath);
+          // TODO 发送邮件或者企业微信通知用户
+          return;
+        }
+        file.write(process->readAllStandardOutput());
+        file.close();
+
+        Logger::Tag("MainWindow")
+            .iFmt("Screen capture saved to: %s",
+                  filePath.toStdString().c_str());
+        // TODO 发送邮件或者企业微信通知用户
+      });
+  process->start("adb", {"exec-out", "screencap", "-p"});
 }
 
 void MainWindow::onActionOpenTargetAppClicked() {
+  // 发送 websocket 消息给客户端，通知客户端打开目标应用
   Logger::Tag("MainWindow").d("Open target app action clicked");
 }
 
