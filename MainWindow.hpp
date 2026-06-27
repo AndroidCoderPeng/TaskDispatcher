@@ -25,6 +25,10 @@ public slots:
 
   void slotDataReceived(const QString &message);
 
+  void slotSyncChinaHoliday(int current, int total, const QString &message);
+
+  void slotSyncError(const QString &message);
+
 private:
   Ui::MainWindow *ui;
 
