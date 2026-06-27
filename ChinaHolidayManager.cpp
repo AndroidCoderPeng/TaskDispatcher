@@ -3,8 +3,7 @@
 
 #include <QDate>
 #include <QJsonDocument>
-#include <QNetworkReply>
-#include <QNetworkRequest>
+#include <QJsonObject>
 #include <QProcess>
 #include <QUrl>
 
@@ -101,8 +100,48 @@ void ChinaHolidayManager::onCurlProcessFinished(
 }
 
 void ChinaHolidayManager::handleHolidayData() {
-  // 这里可以根据实际需求解析 _result 中的节假日数据
-  // 例如，将其存储到本地文件或数据库中
-  Logger::Tag("ChinaHolidayManager").d(_result.toStdString().c_str());
+  QJsonDocument doc = QJsonDocument::fromJson(_result.toUtf8());
+  if (doc.isNull() || !doc.isObject()) {
+    emit signalSyncError("节假日数据解析失败：JSON 无效");
+    return;
+  }
+
+  QJsonObject root = doc.object();
+
+  // 解析节假日日期
+  _holidayDates.clear();
+  QJsonObject holidays = root.value("holidays").toObject();
+  for (auto it = holidays.begin(); it != holidays.end(); ++it) {
+    QDate date = QDate::fromString(it.key(), "yyyy-MM-dd");
+    if (date.isValid()) {
+      _holidayDates.insert(date);
+    }
+  }
+
+  // 解析调休补班日期
+  _workdayDates.clear();
+  QJsonObject workdays = root.value("workdays").toObject();
+  for (auto it = workdays.begin(); it != workdays.end(); ++it) {
+    QDate date = QDate::fromString(it.key(), "yyyy-MM-dd");
+    if (date.isValid()) {
+      _workdayDates.insert(date);
+    }
+  }
+
+  Logger::Tag("ChinaHolidayManager")
+      .dFmt("Parsed %d holidays, %d workdays", _holidayDates.size(),
+            _workdayDates.size());
+
   emit signalSyncSuccess("节假日数据同步完成");
+}
+
+bool ChinaHolidayManager::isHoliday(const QDate &date) const {
+  // 只有周末不算节假日（因为周末不上班属于正常休息），
+  // 这里只返回法定节假日 + 调休放假
+  return _holidayDates.contains(date);
+}
+
+bool ChinaHolidayManager::isWorkday(const QDate &date) const {
+  // 调休补班日：本应是周末但被调整为工作日
+  return _workdayDates.contains(date);
 }
