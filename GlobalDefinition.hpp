@@ -17,4 +17,8 @@ struct WxConfig {
   QString wxKey;
 };
 
+struct ResetTaskConfig {
+  QString time;
+};
+
 #endif // GLOBALDEFINITION_HPP

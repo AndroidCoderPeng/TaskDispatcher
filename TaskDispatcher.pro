@@ -17,6 +17,7 @@ SOURCES += \
     EmailSettingDialog.cpp \
     Logger.cpp \
     DispatcherApplication.cpp \
+    ResetTaskSettingDialog.cpp \
     WebSocketObserver.cpp \
     WxSettingDialog.cpp \
     main.cpp \
@@ -29,12 +30,14 @@ HEADERS += \
     Logger.hpp \
     DispatcherApplication.hpp \
     MainWindow.hpp \
+    ResetTaskSettingDialog.hpp \
     WebSocketObserver.hpp \
     WxSettingDialog.hpp
 
 FORMS += \
     EmailSettingDialog.ui \
     MainWindow.ui \
+    ResetTaskSettingDialog.ui \
     WxSettingDialog.ui
 
 RESOURCES += \

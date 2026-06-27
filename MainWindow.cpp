@@ -4,14 +4,22 @@
 #include "ConfigStore.hpp"
 #include "EmailSettingDialog.hpp"
 #include "Logger.hpp"
+#include "ResetTaskSettingDialog.hpp"
 #include "WebSocketObserver.hpp"
 #include "WxSettingDialog.hpp"
 
 #include <QDesktopServices>
+#include <QDialog>
 #include <QFile>
+#include <QHBoxLayout>
+#include <QInputDialog>
 #include <QJsonObject>
+#include <QLabel>
 #include <QMessageBox>
+#include <QPushButton>
+#include <QTimeEdit>
 #include <QTimer>
+#include <QVBoxLayout>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent), ui(new Ui::MainWindow) {
@@ -158,11 +166,40 @@ void MainWindow::onActionWeWorkSettingClicked() {
 }
 
 void MainWindow::onActionOvertimeSettingClicked() {
-  Logger::Tag("MainWindow").d("Overtime setting action clicked");
+  int defaultValue = 30; // 默认 30 秒
+  QJsonObject saved = ConfigStore::get().load("overtimeConfig");
+  if (saved.contains("seconds")) {
+    defaultValue = saved["seconds"].toInt();
+  }
+
+  bool ok = false;
+  const int seconds =
+      QInputDialog::getInt(this, "任务超时时间", "请输入任务超时时间（秒）",
+                           defaultValue, 10, 120, 1, &ok);
+
+  if (ok) {
+    QJsonObject obj;
+    obj["seconds"] = seconds;
+    ConfigStore::get().save("overtimeConfig", obj);
+    QMessageBox::information(
+        this, "提示", QString("任务超时时间已设置为 %1 秒").arg(seconds));
+  }
 }
 
 void MainWindow::onActionResetTaskSettingClicked() {
-  Logger::Tag("MainWindow").d("Reset task setting action clicked");
+  ResetTaskSettingDialog dialog(this);
+  if (dialog.exec() == QDialog::Accepted) {
+    const auto result = dialog.getInputValue();
+    if (result.first) {
+      const ResetTaskConfig &cfg = result.second;
+
+      QJsonObject obj;
+      obj["time"] = cfg.time;
+      ConfigStore::get().save("resetTaskConfig", obj);
+      QMessageBox::information(
+          this, "提示", QString("重置任务时间已设置为 %1").arg(cfg.time));
+    }
+  }
 }
 
 void MainWindow::onActionRandomTimeSettingClicked() {
