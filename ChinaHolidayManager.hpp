@@ -3,6 +3,7 @@
 
 #include <QNetworkAccessManager>
 #include <QObject>
+#include <QProcess>
 #include <QStringList>
 
 class ChinaHolidayManager : public QObject {
@@ -14,7 +15,7 @@ public:
   void updateChinaHolidayData();
 
 signals:
-  void signalSyncChinaHoliday(int current, int total, const QString &message);
+  void signalSyncSuccess(const QString &message);
 
   void signalSyncError(const QString &message);
 
@@ -25,11 +26,10 @@ private:
   QStringList _urls; // 存储所有 CDN 镜像源的 URL 列表
   QString _result;   // 存储下载的节假日数据
   int _current;      // 当前正在尝试下载的 URL 索引
-  int _total;        // 总共需要尝试下载的 URL 数量
 
   void fetchHolidayData();
 
-  void onReplyFinished();
+  void onCurlProcessFinished(int exitCode, QProcess::ExitStatus exitStatus);
 
   void handleHolidayData();
 };

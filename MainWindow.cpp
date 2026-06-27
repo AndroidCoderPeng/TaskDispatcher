@@ -93,10 +93,14 @@ MainWindow::MainWindow(QWidget *parent)
 
   // 连接节假日数据同步信号
   const auto holidayManager = ChinaHolidayManager::get();
-  connect(holidayManager, &ChinaHolidayManager::signalSyncChinaHoliday, this,
-          &MainWindow::slotSyncChinaHoliday);
+  connect(holidayManager, &ChinaHolidayManager::signalSyncSuccess, this,
+          [this](const QString &message) {
+            QMessageBox::information(this, "同步节假日数据", message);
+          });
   connect(holidayManager, &ChinaHolidayManager::signalSyncError, this,
-          &MainWindow::slotSyncError);
+          [this](const QString &message) {
+            QMessageBox::critical(this, "同步错误", message);
+          });
 }
 
 void MainWindow::onActionImportDataClicked() {
@@ -267,19 +271,6 @@ void MainWindow::onActionDarkThemeToggled(bool checked) {
 
 void MainWindow::onActionSyncDataClicked() {
   ChinaHolidayManager::get()->updateChinaHolidayData();
-}
-
-void MainWindow::slotSyncChinaHoliday(int current, int total,
-                                      const QString &message) {
-  Logger::Tag("MainWindow")
-      .dFmt("Sync progress: %d/%d, message: %s", current, total,
-            message.toStdString().c_str());
-}
-
-void MainWindow::slotSyncError(const QString &message) {
-  Logger::Tag("MainWindow")
-      .dFmt("Sync error: %s", message.toStdString().c_str());
-  QMessageBox::critical(this, "同步错误", message);
 }
 
 void MainWindow::onActionCaptureScreenClicked() {

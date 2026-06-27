@@ -5,13 +5,15 @@
 #include <QJsonDocument>
 #include <QNetworkReply>
 #include <QNetworkRequest>
+#include <QProcess>
 #include <QUrl>
 
 // CDN 镜像源列表
 static const QStringList cdnUrls = {
-    "http://cdn.jsdelivr.net/npm/chinese-days/dist/years/%1.json",
-    "http://fastly.jsdelivr.net/npm/chinese-days/dist/years/%1.json",
-};
+    "https://cdn.jsdelivr.net/npm/chinese-days/dist/years/%1.json",
+    "https://fastly.jsdelivr.net/npm/chinese-days/dist/years/%1.json",
+    "https://registry.npmmirror.com/chinese-days/latest/files/dist/years/"
+    "%1.json"};
 
 ChinaHolidayManager *ChinaHolidayManager::get() {
   static ChinaHolidayManager instance;
@@ -34,7 +36,6 @@ void ChinaHolidayManager::updateChinaHolidayData() {
   }
 
   _current = 0;
-  _total = _urls.size();
 
   fetchHolidayData();
 }
@@ -61,57 +62,47 @@ void ChinaHolidayManager::fetchHolidayData() {
   QString url = _urls.takeFirst();
   _current++;
 
-  emit signalSyncChinaHoliday(_current, _total,
-                              QString("正在下载: %1").arg(url));
-
-  QUrl q_url(url);
-  QNetworkRequest request(q_url);
-  QNetworkReply *reply = _networkManagerPtr->get(request);
-  connect(reply, &QNetworkReply::finished, this,
-          &ChinaHolidayManager::onReplyFinished);
+  // 用系统 curl 下载，绕过 Qt 的 SSL 依赖
+  QProcess *process = new QProcess(this);
+  process->start("curl", {"-sSL", url});
+  connect(process,
+          QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished), this,
+          &ChinaHolidayManager::onCurlProcessFinished);
 }
 
-void ChinaHolidayManager::onReplyFinished() {
-  QNetworkReply *reply = qobject_cast<QNetworkReply *>(sender());
-  if (!reply) {
-    fetchHolidayData();
+void ChinaHolidayManager::onCurlProcessFinished(
+    int exitCode, QProcess::ExitStatus exitStatus) {
+  Q_UNUSED(exitStatus);
+
+  QProcess *process = qobject_cast<QProcess *>(sender());
+  if (!process) {
     return;
   }
-  reply->deleteLater();
+  process->deleteLater();
 
-  QString url = reply->url().toString();
-
-  if (reply->error() != QNetworkReply::NoError) {
+  if (exitCode != 0) {
     Logger::Tag("ChinaHolidayManager")
-        .dFmt("Download failed: %s, error: %s", url.toStdString().c_str(),
-              reply->errorString().toStdString().c_str());
-    // 尝试下一个 CDN 源
+        .dFmt("curl failed: %s",
+              process->readAllStandardError().toStdString().c_str());
     fetchHolidayData();
     return;
   }
 
-  QByteArray data = reply->readAll();
-  Logger::Tag("ChinaHolidayManager")
-      .dFmt("Raw response (first 500 chars): %s",
-            data.left(500).toStdString().c_str());
+  QByteArray data = process->readAllStandardOutput();
   QJsonDocument doc = QJsonDocument::fromJson(data);
-
   if (doc.isNull()) {
-    Logger::Tag("ChinaHolidayManager")
-        .dFmt("Invalid JSON from: %s", url.toStdString().c_str());
-    // 尝试下一个 CDN 源
+    Logger::Tag("ChinaHolidayManager").i("Invalid JSON from curl output");
     fetchHolidayData();
     return;
   }
 
   _result = QString::fromUtf8(data);
-
-  // 最后调用一次fetchHolidayData是为了触发handleHolidayData解析数据
   fetchHolidayData();
 }
 
 void ChinaHolidayManager::handleHolidayData() {
   // 这里可以根据实际需求解析 _result 中的节假日数据
   // 例如，将其存储到本地文件或数据库中
-  emit signalSyncChinaHoliday(_current, _total, "节假日数据同步完成");
+  Logger::Tag("ChinaHolidayManager").d(_result.toStdString().c_str());
+  emit signalSyncSuccess("节假日数据同步完成");
 }
