@@ -37,11 +37,15 @@ private:
   QSet<QDate> _holidayDates; // 节假日日期集合（含调休放假）
   QSet<QDate> _workdayDates; // 调休补班日期集合
 
+  void tryLoadFromCache();
+
   void fetchHolidayData();
 
   void onCurlProcessFinished(int exitCode, QProcess::ExitStatus exitStatus);
 
   void handleHolidayData();
+
+  void parseJsonToMemory(const QJsonObject &root);
 };
 
 #endif // CHINAHOLIDAYMANAGER_HPP

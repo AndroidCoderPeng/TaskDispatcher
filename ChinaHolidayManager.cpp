@@ -1,4 +1,5 @@
 #include "ChinaHolidayManager.hpp"
+#include "ConfigStore.hpp"
 #include "Logger.hpp"
 
 #include <QDate>
@@ -23,12 +24,20 @@ ChinaHolidayManager::ChinaHolidayManager(QObject *parent)
     : QObject(parent), _networkManagerPtr(new QNetworkAccessManager(this)) {}
 
 void ChinaHolidayManager::updateChinaHolidayData() {
+  // 先尝试从缓存加载
+  tryLoadFromCache();
+
+  // 缓存命中则直接返回
+  if (!_holidayDates.isEmpty()) {
+    return;
+  }
+
+  // 缓存未命中，走网络下载
   _urls.clear();
   _result.clear();
 
   const int currentYear = QDate::currentDate().year();
 
-  // 构建所有 URL：本年度 × 每个 CDN 源（用于容错）
   for (const QString &tpl : cdnUrls) {
     const QString url = tpl.arg(currentYear);
     _urls.append(url);
@@ -108,7 +117,17 @@ void ChinaHolidayManager::handleHolidayData() {
 
   QJsonObject root = doc.object();
 
-  // 解析节假日日期
+  parseJsonToMemory(root);
+  QJsonObject cache;
+  cache["year"] = QDate::currentDate().year();
+  cache["holidays"] = root.value("holidays");
+  cache["workdays"] = root.value("workdays");
+  ConfigStore::get().save("holidayData", cache);
+
+  emit signalSyncSuccess("节假日数据同步完成");
+}
+
+void ChinaHolidayManager::parseJsonToMemory(const QJsonObject &root) {
   _holidayDates.clear();
   QJsonObject holidays = root.value("holidays").toObject();
   for (auto it = holidays.begin(); it != holidays.end(); ++it) {
@@ -118,7 +137,6 @@ void ChinaHolidayManager::handleHolidayData() {
     }
   }
 
-  // 解析调休补班日期
   _workdayDates.clear();
   QJsonObject workdays = root.value("workdays").toObject();
   for (auto it = workdays.begin(); it != workdays.end(); ++it) {
@@ -131,17 +149,31 @@ void ChinaHolidayManager::handleHolidayData() {
   Logger::Tag("ChinaHolidayManager")
       .dFmt("Parsed %d holidays, %d workdays", _holidayDates.size(),
             _workdayDates.size());
+}
 
-  emit signalSyncSuccess("节假日数据同步完成");
+void ChinaHolidayManager::tryLoadFromCache() {
+  QJsonObject cache = ConfigStore::get().load("holidayData");
+  if (cache.isEmpty()) {
+    return;
+  }
+
+  int cachedYear = cache.value("year").toInt();
+  int currentYear = QDate::currentDate().year();
+  if (cachedYear != currentYear) {
+    Logger::Tag("ChinaHolidayManager")
+        .dFmt("Cache year %d != current %d, will re-fetch", cachedYear,
+              currentYear);
+    return;
+  }
+
+  parseJsonToMemory(cache);
+  Logger::Tag("ChinaHolidayManager").i("Loaded holidays from cache");
 }
 
 bool ChinaHolidayManager::isHoliday(const QDate &date) const {
-  // 只有周末不算节假日（因为周末不上班属于正常休息），
-  // 这里只返回法定节假日 + 调休放假
   return _holidayDates.contains(date);
 }
 
 bool ChinaHolidayManager::isWorkday(const QDate &date) const {
-  // 调休补班日：本应是周末但被调整为工作日
   return _workdayDates.contains(date);
 }
