@@ -5,6 +5,7 @@
 #include "EmailSettingDialog.hpp"
 #include "Logger.hpp"
 #include "WebSocketObserver.hpp"
+#include "WxSettingDialog.hpp"
 
 #include <QDesktopServices>
 #include <QFile>
@@ -141,7 +142,19 @@ void MainWindow::onActionEmailSettingClicked() {
 }
 
 void MainWindow::onActionWeWorkSettingClicked() {
-  Logger::Tag("MainWindow").d("WeWork setting action clicked");
+  WxSettingDialog dialog(this);
+  if (dialog.exec() == QDialog::Accepted) {
+    const auto result = dialog.getInputValue();
+    if (result.first) {
+      const WxConfig &cfg = result.second;
+
+      QJsonObject obj;
+      obj["messageTitle"] = cfg.messageTitle;
+      obj["wxKey"] = cfg.wxKey;
+      ConfigStore::get().save("wxConfig", obj);
+      QMessageBox::information(this, "提示", "企业微信配置已保存");
+    }
+  }
 }
 
 void MainWindow::onActionOvertimeSettingClicked() {

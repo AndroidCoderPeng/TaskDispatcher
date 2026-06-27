@@ -18,6 +18,7 @@ SOURCES += \
     Logger.cpp \
     DispatcherApplication.cpp \
     WebSocketObserver.cpp \
+    WxSettingDialog.cpp \
     main.cpp \
     MainWindow.cpp
 
@@ -28,11 +29,13 @@ HEADERS += \
     Logger.hpp \
     DispatcherApplication.hpp \
     MainWindow.hpp \
-    WebSocketObserver.hpp
+    WebSocketObserver.hpp \
+    WxSettingDialog.hpp
 
 FORMS += \
     EmailSettingDialog.ui \
-    MainWindow.ui
+    MainWindow.ui \
+    WxSettingDialog.ui
 
 RESOURCES += \
     font.qrc \

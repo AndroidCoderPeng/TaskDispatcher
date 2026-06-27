@@ -12,4 +12,9 @@ struct EmailConfig {
   QString receiverEmail;
 };
 
+struct WxConfig {
+  QString messageTitle;
+  QString wxKey;
+};
+
 #endif // GLOBALDEFINITION_HPP
