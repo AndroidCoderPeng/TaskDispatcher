@@ -21,6 +21,7 @@ SOURCES += \
     DispatcherApplication.cpp \
     MailSender.cpp \
     ResetTaskSettingDialog.cpp \
+    TaskItemWidget.cpp \
     TaskStore.cpp \
     WebSocketObserver.cpp \
     WxMessageSender.cpp \
@@ -39,6 +40,7 @@ HEADERS += \
     MailSender.hpp \
     MainWindow.hpp \
     ResetTaskSettingDialog.hpp \
+    TaskItemWidget.hpp \
     TaskStore.hpp \
     WebSocketObserver.hpp \
     WsProtocol.hpp \

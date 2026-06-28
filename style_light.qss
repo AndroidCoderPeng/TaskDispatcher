@@ -87,6 +87,26 @@ QListView::item:selected {
 	background-color:rgba(0,122,255,0.15);
 	color:#333333;
 }
+/* ====== QListWidget ====== */
+QListWidget {
+	background-color:#FFFFFF;
+	color:#333333;
+	border:1px solid #ABABAB;
+	border-radius:3px;
+	font-size:10pt;
+	outline:none;
+	padding:2px;
+}
+QListWidget::item {
+	padding:6px 4px;
+}
+QListWidget::item:hover {
+	background-color:rgba(0,122,255,0.06);
+}
+QListWidget::item:selected {
+	background-color:rgba(0,122,255,0.15);
+	color:#333333;
+}
 /* ====== QLineEdit ====== */
 QLineEdit {
 	background-color:#FFFFFF;

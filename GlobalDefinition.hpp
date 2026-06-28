@@ -22,9 +22,17 @@ struct ResetTaskConfig {
   QString time;
 };
 
+enum class TaskStatus {
+  Pending,   // 未执行
+  Running,   // 执行中
+  Completed, // 已执行
+  Failed     // 执行失败
+};
+
 struct Task {
   qint32 id;
   QDateTime scheduledTime;
+  TaskStatus status = TaskStatus::Pending;
 };
 
 #endif // GLOBALDEFINITION_HPP

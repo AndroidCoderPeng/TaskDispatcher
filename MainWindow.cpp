@@ -8,6 +8,7 @@
 #include "Logger.hpp"
 #include "MailSender.hpp"
 #include "ResetTaskSettingDialog.hpp"
+#include "TaskItemWidget.hpp"
 #include "TaskStore.hpp"
 #include "WebSocketObserver.hpp"
 #include "WsProtocol.hpp"
@@ -544,16 +545,16 @@ void MainWindow::onAddTaskButtonClicked() {
   }
 }
 
-// TODO
-// 列表布局要自定义，因为要显示任务的时间和状态，状态可以是未执行、已执行、执行中等
 void MainWindow::updateTaskListWidget() {
   ui->listWidget->clear();
   const QList<Task> tasks = TaskStore::get().loadAll();
   for (const Task &task : tasks) {
-    const QString itemText =
-        QString("%1").arg(task.scheduledTime.toString("HH:mm:ss"));
-    QListWidgetItem *item = new QListWidgetItem(itemText, ui->listWidget);
-    item->setData(Qt::UserRole, task.id); // 将任务 ID 存储在 UserRole 中
+    QListWidgetItem *item = new QListWidgetItem(ui->listWidget);
+    item->setData(Qt::UserRole, task.id);
+
+    TaskItemWidget *taskWidget = new TaskItemWidget(task, ui->listWidget);
+    item->setSizeHint(taskWidget->sizeHint());
+    ui->listWidget->setItemWidget(item, taskWidget);
   }
 }
 
