@@ -71,7 +71,7 @@
                                         <item>
                                             <widget class="QLabel" name="countDownLabel">
                                                 <property name="text">
-                                                    <string>06小时59分钟后刷新每日任务</string>
+                                                    <string>距离重置任务还有 06时59分00秒</string>
                                                 </property>
                                             </widget>
                                         </item>

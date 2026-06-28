@@ -38,6 +38,7 @@ MainWindow::MainWindow(QWidget *parent)
     ui->dateLabel->setText(
         QDate::currentDate().toString("yyyy年MM月dd | dddd"));
     ui->timeLabel->setText(QDateTime::currentDateTime().toString("HH:mm:ss"));
+    updateCountDown();
   });
   timer->start(1000);
 
@@ -212,6 +213,10 @@ void MainWindow::onActionResetTaskSettingClicked() {
       QJsonObject obj;
       obj["time"] = cfg.time;
       ConfigStore::get().save("resetTaskConfig", obj);
+
+      // 立即刷新倒计时显示
+      updateCountDown();
+
       QMessageBox::information(
           this, "提示", QString("重置任务时间已设置为 %1").arg(cfg.time));
     }
@@ -419,6 +424,24 @@ void MainWindow::slotDataReceived(const QString &message) {
   // 响应客户端的消息，处理后续逻辑
   Logger::Tag("MainWindow")
       .dFmt("Received message: %s", message.toStdString().c_str());
+}
+
+void MainWindow::updateCountDown() {
+  QJsonObject resetTaskConfig = ConfigStore::get().load("resetTaskConfig");
+  // 未设置则默认 0 点
+  const QString resetTimeStr = resetTaskConfig.contains("time")
+                                   ? resetTaskConfig["time"].toString()
+                                   : QString("00:00:00");
+  const QTime now = QTime::currentTime();
+  const QTime resetTime = QTime::fromString(resetTimeStr, "HH:mm:ss");
+  int secondsToReset = now.secsTo(resetTime);
+  if (secondsToReset < 0) {
+    // 如果已经过了重置时间，计算到第二天的重置时间
+    secondsToReset += 24 * 3600;
+  }
+  const QString formatedTime =
+      QTime(0, 0).addSecs(secondsToReset).toString("HH时mm分ss秒");
+  ui->countDownLabel->setText(QString("距离重置任务还有 %1").arg(formatedTime));
 }
 
 MainWindow::~MainWindow() { delete ui; }

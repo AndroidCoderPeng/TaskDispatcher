@@ -58,5 +58,7 @@ private:
 
   void onAddTaskButtonClicked();
   void onOpenSocketButtonClicked();
+
+  void updateCountDown();
 };
 #endif // MAINWINDOW_HPP
