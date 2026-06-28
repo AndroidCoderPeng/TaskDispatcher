@@ -4,7 +4,6 @@
 #include "Logger.hpp"
 
 #include <QCoreApplication>
-#include <QDateTime>
 
 MailSender *MailSender::get() {
   static MailSender instance;
@@ -18,7 +17,8 @@ MailSender::MailSender(QObject *parent) : QObject(parent) {
   connect(socketPtr, &QSslSocket::encrypted, this, &MailSender::onEncrypted);
   connect(socketPtr, &QSslSocket::readyRead, this, &MailSender::onReadyRead);
   connect(socketPtr,
-          QOverload<QAbstractSocket::SocketError>::of(&QAbstractSocket::error),
+          QOverload<QAbstractSocket::SocketError>::of(
+              &QAbstractSocket::errorOccurred),
           this, &MailSender::onErrorOccurred);
 
   timeoutTimerPtr = new QTimer(this);
@@ -52,7 +52,6 @@ bool MailSender::loadEmailConfig() {
 void MailSender::sendEmail(const QString &subject, const QString &body) {
   if (!loadEmailConfig()) {
     Logger::Tag("MailSender").e("Email config not found or incomplete");
-    emit signalSendError("邮箱配置不完整，请先在配置邮箱信息");
     return;
   }
 
@@ -86,9 +85,10 @@ void MailSender::onReadyRead() {
     QString line = QString::fromUtf8(socketPtr->readLine()).trimmed();
     Logger::Tag("MailSender").dFmt("Received: %s", line.toStdString().c_str());
 
-    int code = line.left(3).toInt();
+    int code = line.leftRef(3).toInt();
     if (code == 0) {
-      continue; // 无法解析响应码的行，跳过
+      // 无法解析响应码的行，跳过
+      continue;
     }
 
     // SMTP 多行响应：4xx/5xx 开头表示错误，直接失败
@@ -99,7 +99,8 @@ void MailSender::onReadyRead() {
 
     // 检查是否为多行响应的最终行（code + 空格开头）
     if (!isFinalLine(line, expectedCode)) {
-      continue; // 中间行，跳过
+      // 中间行，跳过
+      continue;
     }
 
     // 最终行到达，处理响应
@@ -108,6 +109,8 @@ void MailSender::onReadyRead() {
 }
 
 bool MailSender::isFinalLine(const QString &line, int expectedCode) {
+  Q_UNUSED(expectedCode);
+
   if (line.length() < 4)
     return true;
   // SMTP 多行响应：中间行是 "250-xxx"，最终行是 "250 xxx"
@@ -116,6 +119,8 @@ bool MailSender::isFinalLine(const QString &line, int expectedCode) {
 }
 
 void MailSender::handleSmtpResponse(int code) {
+  Q_UNUSED(code);
+
   switch (smtpStep) {
   case 0: // 服务器问候 (220)
     smtpStep = 1;
@@ -188,7 +193,6 @@ void MailSender::handleSmtpResponse(int code) {
     timeoutTimerPtr->stop();
     socketPtr->disconnectFromHost();
     Logger::Tag("MailSender").i("Email sent successfully!");
-    emit signalSendSuccess("邮件发送成功！");
     break;
 
   default:
@@ -209,7 +213,6 @@ void MailSender::fail(const QString &reason) {
   }
   Logger::Tag("MailSender")
       .eFmt("Send failed: %s", reason.toStdString().c_str());
-  emit signalSendError(reason);
 }
 
 void MailSender::onErrorOccurred(QAbstractSocket::SocketError error) {
@@ -223,43 +226,20 @@ QString MailSender::buildMailContent(const QString &subject,
                                      const QString &body) const {
   QString from = config.senderEmail.trimmed();
   QString to = config.receiverEmail.trimmed();
-  QString boundary = "TaskDispatcherBoundary_" +
-                     QDateTime::currentDateTime().toString("yyyyMMddHHmmsszzz");
 
   QString content;
+
+  // 构建邮件头部
   content += "From: " + from + "\r\n";
   content += "To: " + to + "\r\n";
   content += "Subject: =?UTF-8?B?" + subject.toUtf8().toBase64() + "?=\r\n";
   content += "MIME-Version: 1.0\r\n";
-  content +=
-      "Content-Type: multipart/alternative; boundary=\"" + boundary + "\"\r\n";
-  content += "\r\n";
-  content += "--" + boundary + "\r\n";
   content += "Content-Type: text/plain; charset=UTF-8\r\n";
   content += "Content-Transfer-Encoding: base64\r\n";
   content += "\r\n";
-  content += body.toUtf8().toBase64() + "\r\n";
-  content += "\r\n";
-  content += "--" + boundary + "\r\n";
-  content += "Content-Type: text/html; charset=UTF-8\r\n";
-  content += "Content-Transfer-Encoding: base64\r\n";
-  content += "\r\n";
 
-  // 构建 HTML 格式邮件
-  QString htmlBody = body;
-  htmlBody.replace("\n", "<br>");
-  QString html = "<html><body style='font-family: Microsoft YaHei, sans-serif; "
-                 "padding: 20px;'>";
-  html += "<h2 style='color: #007AFF;'>TaskDispatcher</h2>";
-  html += "<hr style='border: 1px solid #E5E5E5;'>";
-  html += "<div style='margin-top: 20px;'>" + htmlBody + "</div>";
-  html += "<hr style='border: 1px solid #E5E5E5; margin-top: 30px;'>";
-  html += "<p style='color: #999; font-size: 12px;'>此邮件由 TaskDispatcher "
-          "自动发送，请勿回复。</p>";
-  html += "</body></html>";
-  content += html.toUtf8().toBase64() + "\r\n";
-  content += "\r\n";
-  content += "--" + boundary + "--\r\n";
+  // 邮件正文内容使用 Base64 编码
+  content += body.toUtf8().toBase64() + "\r\n";
 
   return content;
 }

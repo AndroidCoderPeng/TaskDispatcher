@@ -106,17 +106,6 @@ MainWindow::MainWindow(QWidget *parent)
           [this](const QString &message) {
             QMessageBox::critical(this, "同步错误", message);
           });
-
-  // 连接邮件发送信号
-  const auto mailSender = MailSender::get();
-  connect(mailSender, &MailSender::signalSendSuccess, this,
-          [this](const QString &message) {
-            QMessageBox::information(this, "邮件发送成功", message);
-          });
-  connect(mailSender, &MailSender::signalSendError, this,
-          [this](const QString &message) {
-            QMessageBox::critical(this, "邮件发送失败", message);
-          });
 }
 
 void MainWindow::onActionImportDataClicked() {

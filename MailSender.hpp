@@ -19,11 +19,6 @@ public:
 
   void sendEmail(const QString &subject, const QString &body);
 
-signals:
-  void signalSendSuccess(const QString &message);
-
-  void signalSendError(const QString &message);
-
 private slots:
   void onConnected();
   void onEncrypted();
