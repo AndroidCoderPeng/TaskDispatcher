@@ -8,6 +8,7 @@
 #include "Logger.hpp"
 #include "MailSender.hpp"
 #include "ResetTaskSettingDialog.hpp"
+#include "TaskStore.hpp"
 #include "WebSocketObserver.hpp"
 #include "WsProtocol.hpp"
 #include "WxMessageSender.hpp"
@@ -42,6 +43,8 @@ MainWindow::MainWindow(QWidget *parent)
     updateCountDown();
   });
   timer->start(1000);
+
+  ui->taskCountLabel->setText(QString(TaskStore::get().loadAll().size()));
 
   // 从 ConfigStore 恢复通知方式选中状态
   {
@@ -413,15 +416,11 @@ void MainWindow::onAddTaskButtonClicked() {
   if (dialog.exec() == QDialog::Accepted) {
     const auto result = dialog.getInputValue();
     if (result.first) {
-      const Task &task = result.second;
-
-      QJsonObject obj;
-      obj["task"] = task;
-      ConfigStore::get().save("taskConfig", obj);
-
-      // 刷新列表和任务数量
-      // ui->taskCountLabel->setText(
-      //     QString("今日任务（%1/%2）").arg(1).arg(tasks.size()));
+      const qint32 newId = TaskStore::get().add(result.second);
+      if (newId > 0) {
+        // 刷新列表和任务数量
+        ui->taskCountLabel->setText(QString(TaskStore::get().loadAll().size()));
+      }
     }
   }
 }

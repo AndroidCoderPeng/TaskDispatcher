@@ -25,7 +25,6 @@ struct ResetTaskConfig {
 struct Task {
   qint32 id;
   QDateTime scheduledTime;
-  QDateTime realExecutionTime;
 };
 
 #endif // GLOBALDEFINITION_HPP

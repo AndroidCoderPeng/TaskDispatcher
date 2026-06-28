@@ -1,6 +1,9 @@
 #include "AddTaskDialog.hpp"
 #include "ui_AddTaskDialog.h"
 
+#include <QDate>
+#include <QDateTime>
+
 AddTaskDialog::AddTaskDialog(QWidget *parent)
     : QDialog(parent), ui(new Ui::AddTaskDialog) {
   ui->setupUi(this);
@@ -12,19 +15,8 @@ AddTaskDialog::AddTaskDialog(QWidget *parent)
 }
 
 void AddTaskDialog::onSaveButtonClicked() {
-  // QString messageTitle = ui->messageTitleView->text();
-  // if (messageTitle.isEmpty()) {
-  //     messageTitle = "指令执行结果通知";
-  // }
-  // cfg.messageTitle = messageTitle;
-
-  // const QString wxKey = ui->wxKeyView->toPlainText().trimmed();
-  // if (wxKey.isEmpty()) {
-  //     QMessageBox::warning(this, "警告", "企业微信webhook Key不能为空");
-  //     return;
-  // }
-  // cfg.wxKey = wxKey;
-
+  const QTime time = ui->timeEdit->time();
+  task.scheduledTime = QDateTime(QDate::currentDate(), time);
   accepted = true;
   accept();
 }
