@@ -98,6 +98,16 @@ QLineEdit {
 QLineEdit:hover {
 	border:1px solid #007AFF;
 }
+/* ====== QTextEdit ====== */
+QTextEdit {
+	background-color:#28283C;
+	color:#D4D4D4;
+	border:1px solid #404058;
+	border-radius:3px;
+}
+QTextEdit:hover {
+	border:1px solid #007AFF;
+}
 /* ====== QPushButton ====== */
 QPushButton {
         background:qlineargradient(x1:0,y1:0,x2:0,y2:1,stop:0 #007AFF,stop:1 #0060DB);
