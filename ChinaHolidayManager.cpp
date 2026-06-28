@@ -5,7 +5,8 @@
 #include <QDate>
 #include <QJsonDocument>
 #include <QJsonObject>
-#include <QProcess>
+#include <QNetworkReply>
+#include <QNetworkRequest>
 #include <QUrl>
 
 // CDN 镜像源列表
@@ -43,8 +44,6 @@ void ChinaHolidayManager::updateChinaHolidayData() {
     _urls.append(url);
   }
 
-  _current = 0;
-
   fetchHolidayData();
 }
 
@@ -57,7 +56,6 @@ void ChinaHolidayManager::fetchHolidayData() {
       return;
     }
 
-    // 解析 JSON 并发送具体数据信号
     handleHolidayData();
     return;
   }
@@ -68,44 +66,34 @@ void ChinaHolidayManager::fetchHolidayData() {
   }
 
   QString url = _urls.takeFirst();
-  _current++;
+  QUrl q_url = QUrl(url);
+  QNetworkRequest request(q_url);
+  request.setAttribute(QNetworkRequest::RedirectPolicyAttribute,
+                       QNetworkRequest::NoLessSafeRedirectPolicy);
+  QNetworkReply *reply = _networkManagerPtr->get(request);
 
-  // 用系统 curl 下载，绕过 Qt 的 SSL 依赖
-  QProcess *process = new QProcess(this);
-  process->start("curl", {"-sSL", url});
-  connect(process,
-          QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished), this,
-          &ChinaHolidayManager::onCurlProcessFinished);
-}
+  connect(reply, &QNetworkReply::finished, this, [this, reply]() {
+    reply->deleteLater();
 
-void ChinaHolidayManager::onCurlProcessFinished(
-    int exitCode, QProcess::ExitStatus exitStatus) {
-  Q_UNUSED(exitStatus);
+    if (reply->error() != QNetworkReply::NoError) {
+      Logger::Tag("ChinaHolidayManager")
+          .dFmt("Network error: %s",
+                reply->errorString().toStdString().c_str());
+      fetchHolidayData();
+      return;
+    }
 
-  QProcess *process = qobject_cast<QProcess *>(sender());
-  if (!process) {
-    return;
-  }
-  process->deleteLater();
+    QByteArray data = reply->readAll();
+    QJsonDocument doc = QJsonDocument::fromJson(data);
+    if (doc.isNull()) {
+      Logger::Tag("ChinaHolidayManager").i("Invalid JSON from network reply");
+      fetchHolidayData();
+      return;
+    }
 
-  if (exitCode != 0) {
-    Logger::Tag("ChinaHolidayManager")
-        .dFmt("curl failed: %s",
-              process->readAllStandardError().toStdString().c_str());
+    _result = QString::fromUtf8(data);
     fetchHolidayData();
-    return;
-  }
-
-  QByteArray data = process->readAllStandardOutput();
-  QJsonDocument doc = QJsonDocument::fromJson(data);
-  if (doc.isNull()) {
-    Logger::Tag("ChinaHolidayManager").i("Invalid JSON from curl output");
-    fetchHolidayData();
-    return;
-  }
-
-  _result = QString::fromUtf8(data);
-  fetchHolidayData();
+  });
 }
 
 void ChinaHolidayManager::handleHolidayData() {

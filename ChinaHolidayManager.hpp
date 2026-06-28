@@ -4,7 +4,6 @@
 #include <QDate>
 #include <QNetworkAccessManager>
 #include <QObject>
-#include <QProcess>
 #include <QSet>
 #include <QStringList>
 
@@ -33,15 +32,12 @@ private:
   QNetworkAccessManager *_networkManagerPtr;
   QStringList _urls;         // 存储所有 CDN 镜像源的 URL 列表
   QString _result;           // 存储下载的节假日数据
-  int _current;              // 当前正在尝试下载的 URL 索引
   QSet<QDate> _holidayDates; // 节假日日期集合（含调休放假）
   QSet<QDate> _workdayDates; // 调休补班日期集合
 
   void tryLoadFromCache();
 
   void fetchHolidayData();
-
-  void onCurlProcessFinished(int exitCode, QProcess::ExitStatus exitStatus);
 
   void handleHolidayData();
 
