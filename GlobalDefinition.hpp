@@ -1,6 +1,7 @@
 #ifndef GLOBALDEFINITION_HPP
 #define GLOBALDEFINITION_HPP
 
+#include <QDateTime>
 #include <QString>
 
 enum class WebSocketState { RUNNING, SHUTDOWN };
@@ -19,6 +20,12 @@ struct WxConfig {
 
 struct ResetTaskConfig {
   QString time;
+};
+
+struct Task {
+  qint32 id;
+  QDateTime scheduledTime;
+  QDateTime realExecutionTime;
 };
 
 #endif // GLOBALDEFINITION_HPP

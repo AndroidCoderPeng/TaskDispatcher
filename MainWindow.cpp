@@ -1,6 +1,7 @@
 #include "MainWindow.hpp"
 #include "ui_MainWindow.h"
 
+#include "AddTaskDialog.hpp"
 #include "ChinaHolidayManager.hpp"
 #include "ConfigStore.hpp"
 #include "EmailSettingDialog.hpp"
@@ -408,21 +409,21 @@ void MainWindow::bindIpAddresses(const QList<QString> &ips) {
 }
 
 void MainWindow::onAddTaskButtonClicked() {
-  // AddTaskDialog dialog(this);
-  // if (dialog.exec() == QDialog::Accepted) {
-  //   const auto result = dialog.getInputValue();
-  //   if (result.first) {
-  //     const QList<Task> &tasks = result.second;
+  AddTaskDialog dialog(this);
+  if (dialog.exec() == QDialog::Accepted) {
+    const auto result = dialog.getInputValue();
+    if (result.first) {
+      const Task &task = result.second;
 
-  //     QJsonObject obj;
-  //     obj["tasks"] = tasks;
-  //     ConfigStore::get().save("taskConfig", obj);
+      QJsonObject obj;
+      obj["task"] = task;
+      ConfigStore::get().save("taskConfig", obj);
 
-  //     // 刷新列表和任务数量
-  //     ui->taskCountLabel->setText(
-  //         QString("今日任务（%1/%2）").arg(1).arg(tasks.size()));
-  //   }
-  // }
+      // 刷新列表和任务数量
+      // ui->taskCountLabel->setText(
+      //     QString("今日任务（%1/%2）").arg(1).arg(tasks.size()));
+    }
+  }
 }
 
 void MainWindow::onOpenSocketButtonClicked() {
