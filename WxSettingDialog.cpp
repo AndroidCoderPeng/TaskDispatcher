@@ -31,7 +31,7 @@ void WxSettingDialog::onSaveCommandButtonClicked() {
   }
   cfg.messageTitle = messageTitle;
 
-  const QString wxKey = ui->wxKeyView->text();
+  const QString wxKey = ui->wxKeyView->toPlainText().trimmed();
   if (wxKey.isEmpty()) {
     QMessageBox::warning(this, "警告", "企业微信webhook Key不能为空");
     return;

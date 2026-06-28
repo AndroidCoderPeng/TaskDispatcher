@@ -7,7 +7,7 @@
                 <x>0</x>
                 <y>0</y>
                 <width>400</width>
-                <height>200</height>
+                <height>220</height>
             </rect>
         </property>
         <property name="windowTitle">
@@ -19,7 +19,7 @@
                     <x>31</x>
                     <y>24</y>
                     <width>341</width>
-                    <height>151</height>
+                    <height>171</height>
                 </rect>
             </property>
             <layout class="QVBoxLayout" name="verticalLayout">
@@ -84,7 +84,7 @@
                             </widget>
                         </item>
                         <item>
-                            <widget class="QLineEdit" name="wxKeyView">
+                            <widget class="QTextEdit" name="wxKeyView">
                                 <property name="sizePolicy">
                                     <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
                                         <horstretch>0</horstretch>
@@ -96,9 +96,6 @@
                                 </property>
                                 <property name="placeholderText">
                                     <string>必填</string>
-                                </property>
-                                <property name="clearButtonEnabled">
-                                    <bool>true</bool>
                                 </property>
                             </widget>
                         </item>
