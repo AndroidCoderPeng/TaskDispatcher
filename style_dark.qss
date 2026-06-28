@@ -163,6 +163,40 @@ QTimeEdit::down-arrow {
 QTimeEdit::down-button:hover QTimeEdit::down-arrow {
 	image:url(:/spin_down_007aff.png);
 }
+/* ====== QRadioButton ====== */
+QRadioButton {
+	color:#D4D4D4;
+	spacing:6px;
+}
+QRadioButton::indicator {
+	width:12px;
+	height:12px;
+	border-radius:7px;
+	border:1px solid #404058;
+	background-color:#28283C;
+}
+QRadioButton::indicator:hover {
+	border-color:#007AFF;
+}
+QRadioButton::indicator:checked {
+	border-color:#007AFF;
+	background-color:#007AFF;
+}
+QRadioButton::indicator:checked:hover {
+	border-color:#0060DB;
+	background-color:#0060DB;
+}
+QRadioButton:disabled {
+	color:#707080;
+}
+QRadioButton::indicator:disabled {
+	border-color:#505068;
+	background-color:#333348;
+}
+QRadioButton::indicator:checked:disabled {
+	border-color:#505068;
+	background-color:#505068;
+}
 /* ====== QPushButton ====== */
 QPushButton {
         background:qlineargradient(x1:0,y1:0,x2:0,y2:1,stop:0 #007AFF,stop:1 #0060DB);
