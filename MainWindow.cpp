@@ -84,8 +84,6 @@ MainWindow::MainWindow(QWidget *parent)
           &MainWindow::onActionTestEmailClicked);
   connect(ui->actionTextWx, &QAction::triggered, this,
           &MainWindow::onActionTextWxClicked);
-  connect(ui->actionQuestion, &QAction::triggered, this,
-          &MainWindow::onActionQuestionClicked);
   connect(ui->actionProjectSite, &QAction::triggered, this,
           &MainWindow::onActionProjectSiteTriggered);
   connect(ui->actionAbout, &QAction::triggered, this,
@@ -358,10 +356,6 @@ void MainWindow::onActionTextWxClicked() {
   WxMessageSender::get()->sendMessage(
       "测试企业微信消息",
       "这是一条来自 TaskDispatcher 的企业微信消息，消息发送功能配置成功！");
-}
-
-void MainWindow::onActionQuestionClicked() {
-  Logger::Tag("MainWindow").d("Question action clicked");
 }
 
 void MainWindow::onActionProjectSiteTriggered() {
