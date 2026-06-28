@@ -42,6 +42,19 @@ MainWindow::MainWindow(QWidget *parent)
   });
   timer->start(1000);
 
+  // 从 ConfigStore 恢复通知方式选中状态
+  {
+    const QJsonObject saved = ConfigStore::get().load("notifyMethodConfig");
+    const QString method =
+        saved.contains("method") ? saved["method"].toString() : QString();
+    if (method == "wx") {
+      ui->wxRadioButton->setChecked(true);
+    } else {
+      // 默认选中邮箱通知
+      ui->emailRadioButton->setChecked(true);
+    }
+  }
+
   // 清除QComboBox的QAbstractItemView::item默认QSS
   ui->ipv4Box->setView(new QListView());
 
@@ -95,6 +108,12 @@ MainWindow::MainWindow(QWidget *parent)
           &MainWindow::onAddTaskButtonClicked);
   connect(ui->openSocketButton, &QPushButton::clicked, this,
           &MainWindow::onOpenSocketButtonClicked);
+
+  // 连接 RadioButton 信号：通知方式切换
+  connect(ui->emailRadioButton, &QRadioButton::toggled, this,
+          &MainWindow::onNotifyMethodChanged);
+  connect(ui->wxRadioButton, &QRadioButton::toggled, this,
+          &MainWindow::onNotifyMethodChanged);
 
   // 连接节假日数据同步信号
   const auto holidayManager = ChinaHolidayManager::get();
@@ -416,6 +435,13 @@ void MainWindow::onOpenSocketButtonClicked() {
   } else {
     WebSocketObserver::get()->startServer(ui->ipv4Box->currentText());
   }
+}
+
+void MainWindow::onNotifyMethodChanged() {
+  const QString method = ui->emailRadioButton->isChecked() ? "email" : "wx";
+  QJsonObject obj;
+  obj["method"] = method;
+  ConfigStore::get().save("notifyMethodConfig", obj);
 }
 
 void MainWindow::slotNoClient() {
