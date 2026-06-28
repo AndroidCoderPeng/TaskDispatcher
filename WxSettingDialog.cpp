@@ -19,12 +19,12 @@ WxSettingDialog::WxSettingDialog(QWidget *parent)
   }
 
   connect(ui->saveButton, &QPushButton::clicked, this,
-          &WxSettingDialog::onSaveCommandButtonClicked);
+          &WxSettingDialog::onSaveButtonClicked);
   connect(ui->cancelButton, &QPushButton::clicked, this,
           &WxSettingDialog::onCancelButtonClicked);
 }
 
-void WxSettingDialog::onSaveCommandButtonClicked() {
+void WxSettingDialog::onSaveButtonClicked() {
   QString messageTitle = ui->messageTitleView->text();
   if (messageTitle.isEmpty()) {
     messageTitle = "指令执行结果通知";

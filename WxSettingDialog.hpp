@@ -16,7 +16,7 @@ public:
   explicit WxSettingDialog(QWidget *parent = nullptr);
   ~WxSettingDialog();
 
-  void onSaveCommandButtonClicked();
+  void onSaveButtonClicked();
 
   void onCancelButtonClicked();
 

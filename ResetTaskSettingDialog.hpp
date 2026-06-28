@@ -16,7 +16,7 @@ public:
   explicit ResetTaskSettingDialog(QWidget *parent = nullptr);
   ~ResetTaskSettingDialog();
 
-  void onSaveCommandButtonClicked();
+  void onSaveButtonClicked();
 
   void onCancelButtonClicked();
 

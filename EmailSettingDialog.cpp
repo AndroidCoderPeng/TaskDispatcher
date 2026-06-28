@@ -23,12 +23,12 @@ EmailSettingDialog::EmailSettingDialog(QWidget *parent)
   }
 
   connect(ui->saveButton, &QPushButton::clicked, this,
-          &EmailSettingDialog::onSaveCommandButtonClicked);
+          &EmailSettingDialog::onSaveButtonClicked);
   connect(ui->cancelButton, &QPushButton::clicked, this,
           &EmailSettingDialog::onCancelButtonClicked);
 }
 
-void EmailSettingDialog::onSaveCommandButtonClicked() {
+void EmailSettingDialog::onSaveButtonClicked() {
   QString emailTitle = ui->emailTitleView->text();
   if (emailTitle.isEmpty()) {
     emailTitle = "指令执行结果通知";

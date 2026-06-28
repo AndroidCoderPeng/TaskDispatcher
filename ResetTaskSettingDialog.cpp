@@ -17,12 +17,12 @@ ResetTaskSettingDialog::ResetTaskSettingDialog(QWidget *parent)
   }
 
   connect(ui->saveButton, &QPushButton::clicked, this,
-          &ResetTaskSettingDialog::onSaveCommandButtonClicked);
+          &ResetTaskSettingDialog::onSaveButtonClicked);
   connect(ui->cancelButton, &QPushButton::clicked, this,
           &ResetTaskSettingDialog::onCancelButtonClicked);
 }
 
-void ResetTaskSettingDialog::onSaveCommandButtonClicked() {
+void ResetTaskSettingDialog::onSaveButtonClicked() {
   cfg.time = ui->timeEdit->time().toString("HH:mm:ss");
   accepted = true;
   accept();

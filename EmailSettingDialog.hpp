@@ -17,7 +17,7 @@ public:
   explicit EmailSettingDialog(QWidget *parent = nullptr);
   ~EmailSettingDialog();
 
-  void onSaveCommandButtonClicked();
+  void onSaveButtonClicked();
 
   void onCancelButtonClicked();
 
