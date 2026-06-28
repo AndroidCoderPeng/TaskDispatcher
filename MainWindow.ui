@@ -69,6 +69,20 @@
                                             </widget>
                                         </item>
                                         <item>
+                                            <widget class="QLabel" name="timeLabel">
+                                                <property name="font">
+                                                    <font>
+                                                        <family>IQYHT Black</family>
+                                                        <pointsize>24</pointsize>
+                                                        <bold>true</bold>
+                                                    </font>
+                                                </property>
+                                                <property name="text">
+                                                    <string>00:00:00</string>
+                                                </property>
+                                            </widget>
+                                        </item>
+                                        <item>
                                             <widget class="QLabel" name="countDownLabel">
                                                 <property name="text">
                                                     <string>距离重置任务还有 06时59分00秒</string>
@@ -78,18 +92,32 @@
                                     </layout>
                                 </item>
                                 <item>
-                                    <widget class="QLabel" name="timeLabel">
-                                        <property name="font">
-                                            <font>
-                                                <family>IQYHT Black</family>
-                                                <pointsize>24</pointsize>
-                                                <bold>true</bold>
-                                            </font>
+                                    <layout class="QVBoxLayout" name="verticalLayout_3">
+                                        <property name="spacing">
+                                            <number>8</number>
                                         </property>
-                                        <property name="text">
-                                            <string>00:00:00</string>
-                                        </property>
-                                    </widget>
+                                        <item>
+                                            <widget class="QPushButton" name="executeTaskButton">
+                                                <property name="text">
+                                                    <string>执行任务</string>
+                                                </property>
+                                            </widget>
+                                        </item>
+                                        <item>
+                                            <widget class="QRadioButton" name="emailRadioButton">
+                                                <property name="text">
+                                                    <string>邮箱通知</string>
+                                                </property>
+                                            </widget>
+                                        </item>
+                                        <item>
+                                            <widget class="QRadioButton" name="wxRadioButton">
+                                                <property name="text">
+                                                    <string>企微通知</string>
+                                                </property>
+                                            </widget>
+                                        </item>
+                                    </layout>
                                 </item>
                             </layout>
                         </item>
