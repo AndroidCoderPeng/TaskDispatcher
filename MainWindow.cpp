@@ -9,6 +9,7 @@
 #include "ResetTaskSettingDialog.hpp"
 #include "WebSocketObserver.hpp"
 #include "WsProtocol.hpp"
+#include "WxMessageSender.hpp"
 #include "WxSettingDialog.hpp"
 
 #include <QCoreApplication>
@@ -296,7 +297,7 @@ void MainWindow::onActionCaptureScreenClicked() {
   QProcess *process = new QProcess(this);
   connect(
       process, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
-      this, [this, process, filePath](int exitCode, QProcess::ExitStatus) {
+      this, [process, filePath](int exitCode, QProcess::ExitStatus) {
         process->deleteLater();
 
         if (exitCode != 0) {
@@ -312,6 +313,7 @@ void MainWindow::onActionCaptureScreenClicked() {
           Logger::Tag("MainWindow")
               .eFmt("Failed to capture screen: %s", tip.toStdString().c_str());
           // TODO 发送邮件或者企业微信通知用户
+          MailSender::get()->sendEmail("截屏失败", tip.toStdString().c_str());
           return;
         }
 
@@ -320,9 +322,9 @@ void MainWindow::onActionCaptureScreenClicked() {
           Logger::Tag("MainWindow")
               .eFmt("Failed to open capture file for writing: %s",
                     filePath.toStdString().c_str());
-          QMessageBox::warning(this, "截图失败",
-                               "无法写入截图文件: " + filePath);
           // TODO 发送邮件或者企业微信通知用户
+          MailSender::get()->sendEmail("截屏失败",
+                                       "无法写入截图文件: " + filePath);
           return;
         }
         file.write(process->readAllStandardOutput());
@@ -353,7 +355,9 @@ void MainWindow::onActionTestEmailClicked() {
 }
 
 void MainWindow::onActionTextWxClicked() {
-  Logger::Tag("MainWindow").d("Test WeWork action clicked");
+  WxMessageSender::get()->sendMessage(
+      "测试企业微信消息",
+      "这是一条来自 TaskDispatcher 的企业微信消息，消息发送功能配置成功！");
 }
 
 void MainWindow::onActionQuestionClicked() {
