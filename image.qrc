@@ -5,6 +5,10 @@
         <file>combox_arrow_007aff.png</file>
         <file>socket_listening.png</file>
         <file>socket_shutdown.png</file>
+        <file>spin_up.png</file>
+        <file>spin_down.png</file>
+        <file>spin_up_007aff.png</file>
+        <file>spin_down_007aff.png</file>
     </qresource>
     <qresource prefix="/icon">
         <file>application.ico</file>

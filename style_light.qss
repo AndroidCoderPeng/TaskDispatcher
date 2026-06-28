@@ -108,6 +108,61 @@ QTextEdit {
 QTextEdit:hover {
 	border:1px solid #007AFF;
 }
+/* ====== QTimeEdit ====== */
+QTimeEdit {
+	background-color:#FFFFFF;
+	color:#333333;
+	border:1px solid #ABABAB;
+	border-radius:3px;
+	padding:3px;
+}
+QTimeEdit:hover {
+	border:1px solid #007AFF;
+}
+QTimeEdit:disabled {
+	background-color:#E0E0E0;
+	color:#A0A0A0;
+	border-color:#A0A0A0;
+}
+QTimeEdit::up-button {
+	subcontrol-origin:border;
+	subcontrol-position:top right;
+	width:20px;
+	border-left:1px solid #ABABAB;
+	border-bottom:1px solid #ABABAB;
+	border-top-right-radius:3px;
+}
+QTimeEdit::up-button:hover {
+	border-color:#007AFF;
+	background-color:rgba(0,122,255,0.08);
+}
+QTimeEdit::up-arrow {
+	image:url(:/spin_up.png);
+	width:10px;
+	height:10px;
+}
+QTimeEdit::up-button:hover QTimeEdit::up-arrow {
+	image:url(:/spin_up_007aff.png);
+}
+QTimeEdit::down-button {
+	subcontrol-origin:border;
+	subcontrol-position:bottom right;
+	width:20px;
+	border-left:1px solid #ABABAB;
+	border-bottom-right-radius:3px;
+}
+QTimeEdit::down-button:hover {
+	border-color:#007AFF;
+	background-color:rgba(0,122,255,0.08);
+}
+QTimeEdit::down-arrow {
+	image:url(:/spin_down.png);
+	width:10px;
+	height:10px;
+}
+QTimeEdit::down-button:hover QTimeEdit::down-arrow {
+	image:url(:/spin_down_007aff.png);
+}
 /* ====== QPushButton ====== */
 QPushButton {
         background:qlineargradient(x1:0,y1:0,x2:0,y2:1,stop:0 #007AFF,stop:1 #0060DB);
