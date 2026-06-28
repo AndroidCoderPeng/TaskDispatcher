@@ -7,6 +7,7 @@
 #include "Logger.hpp"
 #include "ResetTaskSettingDialog.hpp"
 #include "WebSocketObserver.hpp"
+#include "WsProtocol.hpp"
 #include "WxSettingDialog.hpp"
 
 #include <QCoreApplication>
@@ -341,7 +342,7 @@ void MainWindow::onActionOpenTargetAppClicked() {
     QMessageBox::warning(this, "警告", "通信服务未开启，请先开启通信服务");
     return;
   }
-  observer->sendMessage("open");
+  observer->sendMessage(WsProtocol::Action::OPEN_APP);
 }
 
 void MainWindow::onActionTestEmailClicked() {

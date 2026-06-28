@@ -34,6 +34,7 @@ HEADERS += \
     MainWindow.hpp \
     ResetTaskSettingDialog.hpp \
     WebSocketObserver.hpp \
+    WsProtocol.hpp \
     WxSettingDialog.hpp
 
 FORMS += \
