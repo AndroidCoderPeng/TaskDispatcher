@@ -19,8 +19,11 @@
 #include <QDialog>
 #include <QDir>
 #include <QFile>
+#include <QFileDialog>
 #include <QHBoxLayout>
 #include <QInputDialog>
+#include <QJsonArray>
+#include <QJsonDocument>
 #include <QJsonObject>
 #include <QLabel>
 #include <QMessageBox>
@@ -137,35 +140,130 @@ MainWindow::MainWindow(QWidget *parent)
 }
 
 void MainWindow::onActionImportDataClicked() {
-  Logger::Tag("MainWindow").d("Import data action clicked");
+  const QString filePath =
+      QFileDialog::getOpenFileName(this, "导入数据", "", "配置文件 (*.json)");
+  if (filePath.isEmpty()) {
+    Logger::Tag("MainWindow").d("Import data canceled");
+    return;
+  }
+
+  QFile file(filePath);
+  if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+    QMessageBox::critical(this, "错误", "无法打开文件：" + file.errorString());
+    return;
+  }
+
+  const QByteArray data = file.readAll();
+  file.close();
+
+  QJsonParseError parseError;
+  const QJsonDocument doc = QJsonDocument::fromJson(data, &parseError);
+  if (parseError.error != QJsonParseError::NoError) {
+    QMessageBox::critical(
+        this, "错误",
+        QString("JSON 解析失败：%1").arg(parseError.errorString()));
+    return;
+  }
+
+  if (!doc.isObject()) {
+    QMessageBox::critical(this, "错误",
+                          "文件格式不正确，根节点必须是 JSON 对象");
+    return;
+  }
+
+  const QJsonObject root = doc.object();
+
+  // 导入配置
+  int configCount = 0;
+  if (root.contains("configs") && root["configs"].isObject()) {
+    const QJsonObject configs = root["configs"].toObject();
+    for (auto it = configs.begin(); it != configs.end(); ++it) {
+      if (it.value().isObject()) {
+        ConfigStore::get().save(it.key(), it.value().toObject());
+        ++configCount;
+      }
+    }
+  }
+
+  // 导入任务
+  int taskCount = 0;
+  if (root.contains("tasks") && root["tasks"].isArray()) {
+    const QJsonArray tasks = root["tasks"].toArray();
+    for (const QJsonValue &val : tasks) {
+      if (!val.isObject())
+        continue;
+      const QJsonObject obj = val.toObject();
+      Task task;
+      task.scheduledTime =
+          QDateTime::fromString(obj["scheduledTime"].toString(), "HH:mm:ss");
+      if (!task.scheduledTime.isValid())
+        continue;
+      if (TaskStore::get().add(task) > 0) {
+        ++taskCount;
+      }
+    }
+  }
+
+  // 刷新界面
+  const int totalTasks = TaskStore::get().loadAll().size();
+  ui->taskCountLabel->setText(QString::number(totalTasks));
+  updateTaskListWidget();
+
+  QMessageBox::information(
+      this, "导入完成",
+      QString("成功导入 %1 项配置，%2 条任务").arg(configCount).arg(taskCount));
 }
 
 void MainWindow::onActionExportDataClicked() {
-  // if (history.isEmpty()) {
-  //   QMessageBox::warning(this, "警告", "没有数据可以保存");
-  //   return;
-  // }
-  // const QString filePath =
-  //     QFileDialog::getSaveFileName(this, "保存日志", "", "文本文件 (*.txt)");
-  // if (filePath.isEmpty()) {
-  //   QMessageBox::warning(this, "警告", "未选择保存文件");
-  //   return;
-  // }
-  // QFile file(filePath);
-  // if (!file.open(QIODevice::WriteOnly | QIODevice::Text |
-  //                QIODevice::Truncate)) {
-  //   QMessageBox::critical(this, "错误", "无法打开文件：" +
-  //   file.errorString()); return;
-  // }
-  // QTextStream out(&file);
-  // const QList<PortMessage> &listRef = history;
-  // for (const auto &msg : listRef) {
-  //   const QString hexData = Utils::formatByteArray(msg.data);
-  //   const auto line = QString("[%1]【%2】%3\n")
-  //                         .arg(msg.formattedTime, msg.direction, hexData);
-  //   out << line;
-  // }
-  // file.close();
+  const auto configs = ConfigStore::get().loadAll();
+  const auto tasks = TaskStore::get().loadAll();
+  if (configs.isEmpty() && tasks.isEmpty()) {
+    QMessageBox::warning(this, "警告", "没有数据可以导出");
+    return;
+  }
+
+  const QString filePath =
+      QFileDialog::getSaveFileName(this, "导出数据", "", "配置文件 (*.json)");
+  if (filePath.isEmpty()) {
+    Logger::Tag("MainWindow").d("Export data canceled");
+    return;
+  }
+  QFile file(filePath);
+  if (!file.open(QIODevice::WriteOnly | QIODevice::Text |
+                 QIODevice::Truncate)) {
+    QMessageBox::critical(this, "错误", "无法打开文件：" + file.errorString());
+    return;
+  }
+
+  QJsonObject root;
+  root["version"] = 1;
+  root["exportTime"] = QDateTime::currentDateTime().toString("HH:mm:ss");
+
+  // 导出配置
+  QJsonObject configsObj;
+  for (auto it = configs.begin(); it != configs.end(); ++it) {
+    configsObj[it.key()] = it.value();
+  }
+  root["configs"] = configsObj;
+
+  // 导出任务
+  QJsonArray tasksArr;
+  for (const Task &task : tasks) {
+    QJsonObject obj;
+    obj["id"] = task.id;
+    obj["scheduledTime"] = task.scheduledTime.toString("HH:mm:ss");
+    tasksArr.append(obj);
+  }
+  root["tasks"] = tasksArr;
+
+  const QJsonDocument doc(root);
+  file.write(doc.toJson(QJsonDocument::Indented));
+  file.close();
+
+  QMessageBox::information(this, "导出完成",
+                           QString("成功导出 %1 项配置，%2 条任务")
+                               .arg(configs.size())
+                               .arg(tasks.size()));
 }
 
 void MainWindow::onActionCloseClicked() {
@@ -406,7 +504,7 @@ void MainWindow::onActionAboutTriggered() {
                      "href='mailto:AndroidCoderPeng'>290677893@qq.com</a></p>"
                      "<hr>"
                      "<p>支持 Windows / Linux / Mac "
-                     "平台。Mac平台需要自行下载Qt编译链编译</p>");
+                     "平台。Mac平台需自行下载Qt编译链编译</p>");
 }
 
 void MainWindow::bindIpAddresses(const QList<QString> &ips) {
@@ -427,7 +525,7 @@ void MainWindow::onExecuteTaskButtonClicked() {
     return;
   }
 
-  // 可以执行链式任务了
+  // TODO 可以执行链式任务了
 }
 
 void MainWindow::onAddTaskButtonClicked() {
@@ -446,6 +544,8 @@ void MainWindow::onAddTaskButtonClicked() {
   }
 }
 
+// TODO
+// 列表布局要自定义，因为要显示任务的时间和状态，状态可以是未执行、已执行、执行中等
 void MainWindow::updateTaskListWidget() {
   ui->listWidget->clear();
   const QList<Task> tasks = TaskStore::get().loadAll();

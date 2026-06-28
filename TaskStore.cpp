@@ -41,8 +41,7 @@ qint32 TaskStore::add(const Task &task) {
   QSqlDatabase db = QSqlDatabase::database("task_conn");
   QSqlQuery query(db);
   query.prepare("INSERT INTO tasks (scheduled_time) VALUES (:scheduled)");
-  query.bindValue(":scheduled",
-                  task.scheduledTime.toString("yyyy-MM-dd HH:mm:ss"));
+  query.bindValue(":scheduled", task.scheduledTime.toString("HH:mm:ss"));
 
   if (!query.exec()) {
     qWarning("TaskStore: Failed to add task: %s",
@@ -56,8 +55,7 @@ bool TaskStore::update(const Task &task) {
   QSqlDatabase db = QSqlDatabase::database("task_conn");
   QSqlQuery query(db);
   query.prepare("UPDATE tasks SET scheduled_time = :scheduled WHERE id = :id");
-  query.bindValue(":scheduled",
-                  task.scheduledTime.toString("yyyy-MM-dd HH:mm:ss"));
+  query.bindValue(":scheduled", task.scheduledTime.toString("HH:mm:ss"));
   query.bindValue(":id", task.id);
 
   if (!query.exec()) {
@@ -92,7 +90,7 @@ QList<Task> TaskStore::loadAll() const {
     Task task;
     task.id = query.value(0).toInt();
     task.scheduledTime =
-        QDateTime::fromString(query.value(1).toString(), "yyyy-MM-dd HH:mm:ss");
+        QDateTime::fromString(query.value(1).toString(), "HH:mm:ss");
     result.append(task);
   }
   return result;
@@ -108,7 +106,7 @@ Task TaskStore::loadById(qint32 id) const {
   if (query.exec() && query.next()) {
     task.id = query.value(0).toInt();
     task.scheduledTime =
-        QDateTime::fromString(query.value(1).toString(), "yyyy-MM-dd HH:mm:ss");
+        QDateTime::fromString(query.value(1).toString(), "HH:mm:ss");
   }
   return task;
 }
