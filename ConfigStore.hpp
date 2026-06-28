@@ -32,6 +32,9 @@ public:
 
   void clear();
 
+  /// 在 Application 析构前主动刷新数据到磁盘
+  void flush();
+
 private:
   ConfigStore();
   ~ConfigStore();
@@ -44,6 +47,7 @@ private:
 
   QHash<QString, QJsonObject> _data;
   mutable QMutex _mutex;
+  bool _flushed = false;
 };
 
 #endif // CONFIGSTORE_HPP

@@ -12,9 +12,18 @@ ConfigStore &ConfigStore::get() {
   return instance;
 }
 
-ConfigStore::ConfigStore() { readFromFile(); }
+ConfigStore::ConfigStore() : _flushed(false) { readFromFile(); }
 
-ConfigStore::~ConfigStore() { writeToFile(); }
+ConfigStore::~ConfigStore() {
+  if (!_flushed) {
+    writeToFile();
+  }
+}
+
+void ConfigStore::flush() {
+  writeToFile();
+  _flushed = true;
+}
 
 QString ConfigStore::filePath() const {
   return QCoreApplication::applicationDirPath() + "/task_config.json";

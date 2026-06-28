@@ -1,5 +1,6 @@
 #include "DispatcherApplication.hpp"
 
+#include "ConfigStore.hpp"
 #include "Logger.hpp"
 #include "WebSocketObserver.hpp"
 
@@ -66,7 +67,7 @@ DispatcherApplication::DispatcherApplication(int &argc, char **argv)
 void DispatcherApplication::initMainWindow() {
   mainWindowPtr = new MainWindow();
   mainWindowPtr->setWindowTitle("任务调度器");
-  // mainWindowPtr->setWindowIcon(QIcon(":/application.png"));
+  mainWindowPtr->setWindowIcon(QIcon(":/application.png"));
 
   const QRect rect = primaryScreen()->availableGeometry();
   mainWindowPtr->move((rect.width() - mainWindowPtr->width()) / 2,
@@ -79,6 +80,10 @@ DispatcherApplication::~DispatcherApplication() {
   // QThread 子对象会随 Application 销毁自动 quit/wait
   delete mainWindowPtr;
   mainWindowPtr = nullptr;
+
+  // 在 QApplication 销毁前主动将配置写入磁盘，避免静态单例析构时
+  ConfigStore::get().flush();
+
   Logger::Tag("DispatcherApplication")
       .i("DispatcherApplication is being destroyed, cleaning up resources.");
 }
