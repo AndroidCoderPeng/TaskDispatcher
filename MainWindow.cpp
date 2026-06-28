@@ -5,6 +5,7 @@
 #include "ConfigStore.hpp"
 #include "EmailSettingDialog.hpp"
 #include "Logger.hpp"
+#include "MailSender.hpp"
 #include "ResetTaskSettingDialog.hpp"
 #include "WebSocketObserver.hpp"
 #include "WsProtocol.hpp"
@@ -104,6 +105,17 @@ MainWindow::MainWindow(QWidget *parent)
   connect(holidayManager, &ChinaHolidayManager::signalSyncError, this,
           [this](const QString &message) {
             QMessageBox::critical(this, "同步错误", message);
+          });
+
+  // 连接邮件发送信号
+  const auto mailSender = MailSender::get();
+  connect(mailSender, &MailSender::signalSendSuccess, this,
+          [this](const QString &message) {
+            QMessageBox::information(this, "邮件发送成功", message);
+          });
+  connect(mailSender, &MailSender::signalSendError, this,
+          [this](const QString &message) {
+            QMessageBox::critical(this, "邮件发送失败", message);
           });
 }
 
@@ -346,7 +358,9 @@ void MainWindow::onActionOpenTargetAppClicked() {
 }
 
 void MainWindow::onActionTestEmailClicked() {
-  Logger::Tag("MainWindow").d("Test email action clicked");
+  MailSender::get()->sendEmail(
+      "测试邮件",
+      "这是一封来自 TaskDispatcher 的测试邮件，邮件发送功能配置成功！");
 }
 
 void MainWindow::onActionTextWxClicked() {

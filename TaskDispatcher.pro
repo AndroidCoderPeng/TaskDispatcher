@@ -18,6 +18,7 @@ SOURCES += \
     EmailSettingDialog.cpp \
     Logger.cpp \
     DispatcherApplication.cpp \
+    MailSender.cpp \
     ResetTaskSettingDialog.cpp \
     WebSocketObserver.cpp \
     WxSettingDialog.cpp \
@@ -31,6 +32,7 @@ HEADERS += \
     GlobalDefinition.hpp \
     Logger.hpp \
     DispatcherApplication.hpp \
+    MailSender.hpp \
     MainWindow.hpp \
     ResetTaskSettingDialog.hpp \
     WebSocketObserver.hpp \
@@ -47,6 +49,32 @@ RESOURCES += \
     font.qrc \
     image.qrc \
     style.qrc
+
+# 拷贝 OpenSSL DLL（Windows 下 Qt SSL 需要）
+win32 {
+    # 常见 OpenSSL 安装路径
+    OPENSSL_PATHS = \
+        "C:/Program Files/OpenSSL-Win64/bin" \
+        "C:/Program Files/OpenSSL-Win32/bin" \
+        "C:/OpenSSL-Win64/bin" \
+        "C:/vcpkg/installed/x64-windows/bin"
+
+    for(OPENSSL_PATH, OPENSSL_PATHS) {
+        exists($$OPENSSL_PATH/libcrypto-1_1-x64.dll) {
+            message("Found OpenSSL at $$OPENSSL_PATH")
+            # 拷贝到构建输出目录
+            QMAKE_POST_LINK += $$quote(cmd /c copy /y \"$$replace(OPENSSL_PATH, /, \\)\\libcrypto-1_1-x64.dll\" \"$$replace(OUT_PWD, /, \\)\\release\\\" > nul 2>&1)
+            QMAKE_POST_LINK += && $$quote(cmd /c copy /y \"$$replace(OPENSSL_PATH, /, \\)\\libssl-1_1-x64.dll\" \"$$replace(OUT_PWD, /, \\)\\release\\\" > nul 2>&1)
+            break()
+        }
+        exists($$OPENSSL_PATH/libcrypto-1_1.dll) {
+            message("Found OpenSSL (32-bit) at $$OPENSSL_PATH")
+            QMAKE_POST_LINK += $$quote(cmd /c copy /y \"$$replace(OPENSSL_PATH, /, \\)\\libcrypto-1_1.dll\" \"$$replace(OUT_PWD, /, \\)\\release\\\" > nul 2>&1)
+            QMAKE_POST_LINK += && $$quote(cmd /c copy /y \"$$replace(OPENSSL_PATH, /, \\)\\libssl-1_1.dll\" \"$$replace(OUT_PWD, /, \\)\\release\\\" > nul 2>&1)
+            break()
+        }
+    }
+}
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin
