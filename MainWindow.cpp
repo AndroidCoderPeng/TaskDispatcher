@@ -44,7 +44,10 @@ MainWindow::MainWindow(QWidget *parent)
   });
   timer->start(1000);
 
-  ui->taskCountLabel->setText(QString(TaskStore::get().loadAll().size()));
+  const int taskCount = TaskStore::get().loadAll().size();
+  Logger::Tag("MainWindow").dFmt("Loaded %d tasks from database", taskCount);
+  ui->taskCountLabel->setText(QString::number(taskCount));
+  updateTaskListWidget();
 
   // 从 ConfigStore 恢复通知方式选中状态
   {
@@ -108,6 +111,8 @@ MainWindow::MainWindow(QWidget *parent)
           &MainWindow::onActionAboutTriggered);
 
   // 连接按钮信号和槽
+  connect(ui->executeTaskButton, &QPushButton::clicked, this,
+          &MainWindow::onExecuteTaskButtonClicked);
   connect(ui->addTaskButton, &QPushButton::clicked, this,
           &MainWindow::onAddTaskButtonClicked);
   connect(ui->openSocketButton, &QPushButton::clicked, this,
@@ -411,6 +416,20 @@ void MainWindow::bindIpAddresses(const QList<QString> &ips) {
   }
 }
 
+void MainWindow::onExecuteTaskButtonClicked() {
+  if (!WebSocketObserver::get()->isServerRunning()) {
+    QMessageBox::warning(this, "警告", "通信服务未开启，请先开启通信服务");
+    return;
+  }
+
+  if (TaskStore::get().loadAll().isEmpty()) {
+    QMessageBox::warning(this, "警告", "没有任务可以执行，请先添加任务");
+    return;
+  }
+
+  // 可以执行链式任务了
+}
+
 void MainWindow::onAddTaskButtonClicked() {
   AddTaskDialog dialog(this);
   if (dialog.exec() == QDialog::Accepted) {
@@ -419,9 +438,22 @@ void MainWindow::onAddTaskButtonClicked() {
       const qint32 newId = TaskStore::get().add(result.second);
       if (newId > 0) {
         // 刷新列表和任务数量
-        ui->taskCountLabel->setText(QString(TaskStore::get().loadAll().size()));
+        const int taskCount = TaskStore::get().loadAll().size();
+        ui->taskCountLabel->setText(QString::number(taskCount));
+        updateTaskListWidget();
       }
     }
+  }
+}
+
+void MainWindow::updateTaskListWidget() {
+  ui->listWidget->clear();
+  const QList<Task> tasks = TaskStore::get().loadAll();
+  for (const Task &task : tasks) {
+    const QString itemText =
+        QString("%1").arg(task.scheduledTime.toString("HH:mm:ss"));
+    QListWidgetItem *item = new QListWidgetItem(itemText, ui->listWidget);
+    item->setData(Qt::UserRole, task.id); // 将任务 ID 存储在 UserRole 中
   }
 }
 

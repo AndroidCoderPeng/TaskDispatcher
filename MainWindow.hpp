@@ -56,11 +56,14 @@ private:
   void onActionProjectSiteTriggered();
   void onActionAboutTriggered();
 
+  void onExecuteTaskButtonClicked();
   void onAddTaskButtonClicked();
   void onOpenSocketButtonClicked();
 
   void onNotifyMethodChanged();
 
   void updateCountDown();
+
+  void updateTaskListWidget();
 };
 #endif // MAINWINDOW_HPP

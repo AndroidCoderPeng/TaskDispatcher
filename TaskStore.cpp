@@ -29,8 +29,6 @@ void TaskStore::initDatabase() {
   }
 
   QSqlQuery query(db);
-  // 删除旧表结构（如果存在 real_execution_time 字段）
-  query.exec("DROP TABLE IF EXISTS tasks");
   query.exec("CREATE TABLE IF NOT EXISTS tasks ("
              "  id INTEGER PRIMARY KEY AUTOINCREMENT,"
              "  scheduled_time TEXT NOT NULL"
