@@ -21,6 +21,8 @@ public:
   void bindIpAddresses(const QList<QString> &ips);
 
 public slots:
+  void slotNoClient();
+
   void slotServerStateChanged(const WebSocketState &state);
 
   void slotDataReceived(const QString &message);

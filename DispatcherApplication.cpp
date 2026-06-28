@@ -54,12 +54,13 @@ DispatcherApplication::DispatcherApplication(int &argc, char **argv)
   mainWindowPtr->bindIpAddresses(ips);
 
   // 启动 WebSocket 服务端并初始化WebSocket信号连接
-  QObject::connect(WebSocketObserver::get(),
-                   &WebSocketObserver::signalServerStateChanged, mainWindowPtr,
-                   &MainWindow::slotServerStateChanged);
-  QObject::connect(WebSocketObserver::get(),
-                   &WebSocketObserver::signalDataReceived, mainWindowPtr,
-                   &MainWindow::slotDataReceived);
+  const auto observer = WebSocketObserver::get();
+  QObject::connect(observer, &WebSocketObserver::signalNoClient, mainWindowPtr,
+                   &MainWindow::slotNoClient);
+  QObject::connect(observer, &WebSocketObserver::signalServerStateChanged,
+                   mainWindowPtr, &MainWindow::slotServerStateChanged);
+  QObject::connect(observer, &WebSocketObserver::signalDataReceived,
+                   mainWindowPtr, &MainWindow::slotDataReceived);
 }
 
 void DispatcherApplication::initMainWindow() {

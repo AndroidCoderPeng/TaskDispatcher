@@ -53,6 +53,18 @@ bool WebSocketObserver::isServerRunning() const {
   return server != nullptr && server->isListening();
 }
 
+void WebSocketObserver::sendMessage(const QString &message) {
+  if (clients.isEmpty()) {
+    emit signalNoClient();
+    return;
+  }
+  for (QWebSocket *client : clients) {
+    if (client->isValid()) {
+      client->sendTextMessage(message);
+    }
+  }
+}
+
 void WebSocketObserver::onNewConnection() {
   while (server->hasPendingConnections()) {
     QWebSocket *client = server->nextPendingConnection();

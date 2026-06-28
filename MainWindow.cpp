@@ -336,7 +336,12 @@ void MainWindow::onActionCaptureScreenClicked() {
 
 void MainWindow::onActionOpenTargetAppClicked() {
   // 发送 websocket 消息给客户端，通知客户端打开目标应用
-  Logger::Tag("MainWindow").d("Open target app action clicked");
+  const auto observer = WebSocketObserver::get();
+  if (!observer->isServerRunning()) {
+    QMessageBox::warning(this, "警告", "通信服务未开启，请先开启通信服务");
+    return;
+  }
+  observer->sendMessage("open");
 }
 
 void MainWindow::onActionTestEmailClicked() {
@@ -392,6 +397,10 @@ void MainWindow::onOpenSocketButtonClicked() {
   }
 }
 
+void MainWindow::slotNoClient() {
+  QMessageBox::warning(this, "警告", "没有客户端连接到通信服务");
+}
+
 void MainWindow::slotServerStateChanged(const WebSocketState &state) {
   if (state == WebSocketState::RUNNING) {
     ui->socketIconView->setPixmap(QPixmap(":/socket_listening.png"));
@@ -405,6 +414,7 @@ void MainWindow::slotServerStateChanged(const WebSocketState &state) {
 }
 
 void MainWindow::slotDataReceived(const QString &message) {
+  // 响应客户端的消息，处理后续逻辑
   Logger::Tag("MainWindow")
       .dFmt("Received message: %s", message.toStdString().c_str());
 }

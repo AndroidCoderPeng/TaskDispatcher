@@ -24,7 +24,11 @@ public:
 
   bool isServerRunning() const;
 
+  void sendMessage(const QString &message);
+
 signals:
+  void signalNoClient();
+
   void signalServerStateChanged(const WebSocketState &state);
 
   void signalDataReceived(const QString &message);
