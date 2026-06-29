@@ -295,11 +295,7 @@
                 <addaction name="actionSkipHolidaySetting"/>
                 <addaction name="actionOpenResetTaskSetting"/>
                 <addaction name="actionOpenRandomTimeSetting"/>
-            </widget>
-            <widget class="QMenu" name="menuView">
-                <property name="title">
-                    <string>视图(&amp;V)</string>
-                </property>
+                <addaction name="separator"/>
                 <addaction name="actionDarkTheme"/>
             </widget>
             <widget class="QMenu" name="menuData">
@@ -327,7 +323,6 @@
             </widget>
             <addaction name="menuFile"/>
             <addaction name="menuSettings"/>
-            <addaction name="menuView"/>
             <addaction name="menuData"/>
             <addaction name="menuCommand"/>
             <addaction name="menuHelp"/>
