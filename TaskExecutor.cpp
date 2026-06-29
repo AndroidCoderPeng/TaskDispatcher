@@ -50,7 +50,10 @@ int TaskExecutor::calculateDelayToNextMs() const {
   int targetMinutes = scheduled.hour() * 60 + scheduled.minute();
 
   if (randomEnabled) {
-    targetMinutes += QRandomGenerator::global()->bounded(randomMaxMinutes + 1);
+    // 使用 const_cast 在 const 方法中写入随机偏移（仅在定时器触发时调用，线程安全）
+    const_cast<TaskExecutor *>(this)->currentRandomOffset =
+        QRandomGenerator::global()->bounded(randomMaxMinutes + 1);
+    targetMinutes += currentRandomOffset;
   }
 
   const int delayMinutes = targetMinutes - nowMinutes;
@@ -77,6 +80,29 @@ void TaskExecutor::reloadTasks() {
       .dFmt("新一天周期：已重新加载 %d 个任务", tasks.size());
 }
 
+int TaskExecutor::skipPastTasks(int startIndex) const {
+  const QTime now = QTime::currentTime();
+  const int nowMinutes = now.hour() * 60 + now.minute();
+
+  int idx = startIndex;
+  while (idx < tasks.size()) {
+    const QTime taskTime = tasks.at(idx).scheduledTime.time();
+    int taskMinutes = taskTime.hour() * 60 + taskTime.minute();
+    if (randomEnabled) {
+      taskMinutes += randomMaxMinutes; // 考虑随机偏移的最晚可能时间
+    }
+    if (taskMinutes <= nowMinutes) {
+      Logger::Tag("TaskExecutor")
+          .dFmt("跳过已过期任务: %s",
+                taskTime.toString("HH:mm").toStdString().c_str());
+      idx++;
+    } else {
+      break;
+    }
+  }
+  return idx;
+}
+
 void TaskExecutor::start() {
   if (running) {
     return;
@@ -94,14 +120,30 @@ void TaskExecutor::start() {
   });
 
   running = true;
-  currentIndex = 0;
+
+  // 跳过当前时间已过的任务，直接从下一个未到期任务开始
+  currentIndex = skipPastTasks(0);
 
   Logger::Tag("TaskExecutor")
-      .dFmt("调度器已启动，共 %d 个任务，重置时间=%s", tasks.size(),
+      .dFmt("调度器已启动，共 %d 个任务（跳过 %d 个），重置时间=%s",
+            tasks.size(), currentIndex,
             resetTime.toString("HH:mm").toStdString().c_str());
+
+  if (currentIndex >= tasks.size()) {
+    // 所有任务已过期，直接进入等待重置状态
+    emit signalDayFinished();
+    const int delayMs = calculateDelayToResetMs();
+    Logger::Tag("TaskExecutor")
+        .dFmt("所有任务已过期，%lld 秒后等待重置", delayMs / 1000);
+    disconnect(&timer, &QTimer::timeout, this, &TaskExecutor::executeNextTask);
+    connect(&timer, &QTimer::timeout, this, &TaskExecutor::startNewCycle);
+    timer.start(delayMs);
+    return;
+  }
 
   const int delayMs = calculateDelayToNextMs();
   if (delayMs > 0) {
+    emitNextTaskInfo(); // 预显示第一个待执行任务
     timer.start(delayMs);
   } else {
     executeNextTask();
@@ -155,9 +197,15 @@ void TaskExecutor::executeNextTask() {
     return;
   }
 
-  // 执行当前任务
+  // 执行当前任务：计算实际执行时间（计划时间 + 随机偏移）
   const Task currentTask = tasks.at(currentIndex);
-  emit signalTaskExecuted(currentTask.scheduledTime);
+  const QDateTime actualTime =
+      currentTask.scheduledTime.addSecs(currentRandomOffset * 60);
+  const int totalTasks = tasks.size();
+  const qint32 taskId = currentTask.id;
+  const int progress = currentIndex + 1; // 1-based
+
+  emit signalTaskExecuted(actualTime, taskId, progress, totalTasks);
 
   currentIndex++;
   if (currentIndex < tasks.size()) {
@@ -166,6 +214,8 @@ void TaskExecutor::executeNextTask() {
     connect(&timer, &QTimer::timeout, this, &TaskExecutor::executeNextTask);
 
     const int delayMs = calculateDelayToNextMs();
+    emitNextTaskInfo(); // 预显示下一个待执行任务
+
     if (delayMs > 0) {
       timer.start(delayMs);
     } else {
@@ -183,6 +233,16 @@ void TaskExecutor::executeNextTask() {
     connect(&timer, &QTimer::timeout, this, &TaskExecutor::startNewCycle);
     timer.start(delayMs);
   }
+}
+
+void TaskExecutor::emitNextTaskInfo() {
+  if (currentIndex >= tasks.size()) {
+    return;
+  }
+  const Task &task = tasks.at(currentIndex);
+  const QDateTime predicted =
+      task.scheduledTime.addSecs(currentRandomOffset * 60);
+  emit signalNextTaskScheduled(currentIndex + 1, predicted, task.id);
 }
 
 void TaskExecutor::startNewCycle() {
@@ -210,6 +270,7 @@ void TaskExecutor::startNewCycle() {
 
   const int delayMs = calculateDelayToNextMs();
   if (delayMs > 0) {
+    emitNextTaskInfo(); // 预显示第一个待执行任务
     timer.start(delayMs);
   } else {
     executeNextTask();

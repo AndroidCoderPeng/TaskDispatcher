@@ -29,7 +29,11 @@ public slots:
   void slotDataReceived(const QString &message);
 
 private slots:
-  void onTaskExecuted(const QDateTime &time);
+  void onTaskExecuted(const QDateTime &actualTime, qint32 taskId, int current,
+                      int total);
+
+  void onNextTaskScheduled(int nextIndex, const QDateTime &predictedTime,
+                           qint32 nextTaskId);
 
   void onDayFinished();
 
@@ -82,5 +86,7 @@ private:
   void captureScreen();
 
   void killTargetApp();
+
+  void updateExecuteButtonStyle(bool running);
 };
 #endif // MAINWINDOW_HPP

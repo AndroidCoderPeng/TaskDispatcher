@@ -2,6 +2,7 @@
 #define TASKITEMWIDGET_HPP
 
 #include <QLabel>
+#include <QTime>
 #include <QWidget>
 
 #include "GlobalDefinition.hpp"
@@ -14,17 +15,17 @@ public:
 
   QSize sizeHint() const override;
 
-  void updateStatus(TaskStatus status);
+  /// 设置实际执行时间（计划时间 + 随机偏移）
+  void setActualTime(const QTime &time);
 
   qint32 taskId() const;
 
 private:
   void setupUi();
-  void applyStatusStyle(TaskStatus status);
 
   Task mTask;
   QLabel *mTimeLabelPtr;
-  QLabel *mStatusLabelPtr;
+  QLabel *mActualTimeLabelPtr;
 };
 
 #endif // TASKITEMWIDGET_HPP

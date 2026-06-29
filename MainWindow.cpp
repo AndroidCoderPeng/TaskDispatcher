@@ -147,6 +147,8 @@ MainWindow::MainWindow(QWidget *parent)
   executorPtr = new TaskExecutor(this);
   connect(executorPtr, &TaskExecutor::signalTaskExecuted, this,
           &MainWindow::onTaskExecuted);
+  connect(executorPtr, &TaskExecutor::signalNextTaskScheduled, this,
+          &MainWindow::onNextTaskScheduled);
   connect(executorPtr, &TaskExecutor::signalDayFinished, this,
           &MainWindow::onDayFinished);
   connect(executorPtr, &TaskExecutor::signalHolidaySkipped, this,
@@ -422,7 +424,7 @@ void MainWindow::onActionSyncDataClicked() {
   ChinaHolidayManager::get()->updateChinaHolidayData();
 }
 
-void MainWindow::onActionCaptureScreenClicked() { captureScreen(true); }
+void MainWindow::onActionCaptureScreenClicked() { captureScreen(); }
 
 void MainWindow::onActionOpenTargetAppClicked() {
   // 发送 websocket 消息给客户端，通知客户端打开目标应用
@@ -484,6 +486,28 @@ void MainWindow::bindIpAddresses(const QList<QString> &ips) {
 }
 
 void MainWindow::onExecuteTaskButtonClicked() {
+  // 如果正在运行，则停止
+  if (executorPtr->isRunning()) {
+    executorPtr->stop();
+    updateExecuteButtonStyle(false);
+
+    // 重置进度显示
+    ui->taskIndexLabel->setText("0");
+
+    // 清空所有任务的实际执行时间
+    for (int i = 0; i < ui->listWidget->count(); ++i) {
+      QListWidgetItem *item = ui->listWidget->item(i);
+      auto *widget =
+          dynamic_cast<TaskItemWidget *>(ui->listWidget->itemWidget(item));
+      if (widget) {
+        widget->setActualTime(QTime());
+      }
+    }
+
+    Logger::Tag("MainWindow").d("用户手动停止任务调度");
+    return;
+  }
+
   if (!WebSocketObserver::get()->isServerRunning()) {
     ToastWidget::showWarning(this, "通信服务未开启，请先开启通信服务");
     return;
@@ -492,11 +516,6 @@ void MainWindow::onExecuteTaskButtonClicked() {
   const auto tasks = TaskStore::get().loadAll();
   if (tasks.isEmpty()) {
     ToastWidget::showWarning(this, "没有任务可以执行，请先添加任务");
-    return;
-  }
-
-  if (executorPtr->isRunning()) {
-    ToastWidget::showWarning(this, "任务正在执行中，请等待当前任务完成");
     return;
   }
 
@@ -539,6 +558,9 @@ void MainWindow::onExecuteTaskButtonClicked() {
   executorPtr->setRandomTimeConfig(randomEnabled, randomMinutes);
   executorPtr->setResetTime(resetTime);
   executorPtr->start();
+
+  // 按钮变为运行状态
+  updateExecuteButtonStyle(true);
 
   Logger::Tag("MainWindow")
       .dFmt("链式任务已启动，共 %d 个任务，随机=%s，跳过节假日=%s",
@@ -588,51 +610,39 @@ void MainWindow::captureScreen() {
   const QString filePath = captureDir + "/" + fileName;
 
   QProcess *process = new QProcess(this);
-  connect(process,
-          QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished), this,
-          [this, process, filePath, showAlerts](int exitCode,
-                                                QProcess::ExitStatus) {
-            process->deleteLater();
+  connect(
+      process, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
+      this, [this, process, filePath](int exitCode, QProcess::ExitStatus) {
+        process->deleteLater();
 
-            if (exitCode != 0) {
-              const QString err = process->readAllStandardError().trimmed();
-              QString tip;
-              if (err.contains("no devices")) {
-                tip =
-                    "未检测到已连接的 Android 设备，请检查 USB 连接或 adb 状态";
-              } else if (err.contains("more than one device")) {
-                tip = "检测到多个设备连接，请仅保留一台设备";
-              } else {
-                tip = err;
-              }
-              if (showAlerts) {
-                MailSender::get()->sendEmail("截屏失败", tip);
-                ToastWidget::showError(this, tip);
-              } else {
-                Logger::Tag("MainWindow")
-                    .wFmt("截屏失败: %s", tip.toStdString().c_str());
-              }
-              return;
-            }
+        if (exitCode != 0) {
+          const QString err = process->readAllStandardError().trimmed();
+          QString tip;
+          if (err.contains("no devices")) {
+            tip = "未检测到已连接的 Android 设备，请检查 USB 连接或 adb 状态";
+          } else if (err.contains("more than one device")) {
+            tip = "检测到多个设备连接，请仅保留一台设备";
+          } else {
+            tip = err;
+          }
+          MailSender::get()->sendEmail("截屏失败", tip);
+          ToastWidget::showError(this, tip);
+          return;
+        }
 
-            QFile file(filePath);
-            if (!file.open(QIODevice::WriteOnly)) {
-              const QString err = "无法写入截图文件: " + filePath;
-              if (showAlerts) {
-                MailSender::get()->sendEmail("截屏失败", err);
-                ToastWidget::showError(this, err);
-              } else {
-                Logger::Tag("MainWindow")
-                    .wFmt("截屏失败: %s", err.toStdString().c_str());
-              }
-              return;
-            }
-            file.write(process->readAllStandardOutput());
-            file.close();
+        QFile file(filePath);
+        if (!file.open(QIODevice::WriteOnly)) {
+          const QString err = "无法写入截图文件: " + filePath;
+          MailSender::get()->sendEmail("截屏失败", err);
+          ToastWidget::showError(this, err);
+          return;
+        }
+        file.write(process->readAllStandardOutput());
+        file.close();
 
-            Logger::Tag("MainWindow")
-                .dFmt("截屏已保存: %s", filePath.toStdString().c_str());
-          });
+        Logger::Tag("MainWindow")
+            .dFmt("截屏已保存: %s", filePath.toStdString().c_str());
+      });
   process->start("adb", {"exec-out", "screencap", "-p"});
 }
 
@@ -653,6 +663,14 @@ void MainWindow::onOpenSocketButtonClicked() {
     }
   } else {
     WebSocketObserver::get()->startServer(ui->ipv4Box->currentText());
+  }
+}
+
+void MainWindow::updateExecuteButtonStyle(bool running) {
+  if (running) {
+    ui->executeTaskButton->setText("停止任务");
+  } else {
+    ui->executeTaskButton->setText("执行任务");
   }
 }
 
@@ -705,10 +723,23 @@ void MainWindow::updateCountDown() {
   // TODO 如果倒计时结束，清楚所有任务状态，并重新开始新的一天任务
 }
 
-void MainWindow::onTaskExecuted(const QDateTime &time) {
-  // 单个任务触发时的处理：打开目标应用 → 等待延时 → 截屏 → 杀掉应用
-  const QString timeStr = time.toString("HH:mm:ss");
-  Logger::Tag("MainWindow").dFmt("执行任务: %s", timeStr.toStdString().c_str());
+void MainWindow::onTaskExecuted(const QDateTime &actualTime, qint32 taskId,
+                                int current, int total) {
+  Logger::Tag("MainWindow")
+      .dFmt("执行任务 #%d: %s (%d/%d)", taskId,
+            actualTime.toString("HH:mm:ss").toStdString().c_str(), current,
+            total);
+
+  // 更新刚执行完的任务的实际执行时间
+  for (int i = 0; i < ui->listWidget->count(); ++i) {
+    QListWidgetItem *item = ui->listWidget->item(i);
+    auto *widget =
+        dynamic_cast<TaskItemWidget *>(ui->listWidget->itemWidget(item));
+    if (widget && widget->taskId() == taskId) {
+      widget->setActualTime(actualTime.time());
+      break;
+    }
+  }
 
   const auto observer = WebSocketObserver::get();
   if (observer->isServerRunning()) {
@@ -741,6 +772,29 @@ void MainWindow::onTaskExecuted(const QDateTime &time) {
   });
 }
 
+void MainWindow::onNextTaskScheduled(int nextIndex,
+                                     const QDateTime &predictedTime,
+                                     qint32 nextTaskId) {
+  Logger::Tag("MainWindow")
+      .dFmt("下一任务 #%d: %s (第 %d 个)", nextTaskId,
+            predictedTime.toString("HH:mm:ss").toStdString().c_str(),
+            nextIndex);
+
+  // 更新进度显示为下一个待执行任务的索引
+  ui->taskIndexLabel->setText(QString::number(nextIndex));
+
+  // 在任务列表中预显示下一个任务的预测执行时间
+  for (int i = 0; i < ui->listWidget->count(); ++i) {
+    QListWidgetItem *item = ui->listWidget->item(i);
+    auto *widget =
+        dynamic_cast<TaskItemWidget *>(ui->listWidget->itemWidget(item));
+    if (widget && widget->taskId() == nextTaskId) {
+      widget->setActualTime(predictedTime.time());
+      break;
+    }
+  }
+}
+
 void MainWindow::onDayFinished() {
   Logger::Tag("MainWindow").d("当日所有任务执行完毕，等待重置点");
 }
@@ -752,6 +806,24 @@ void MainWindow::onHolidaySkipped() {
 
 void MainWindow::onCycleReset() {
   Logger::Tag("MainWindow").d("任务已重置，开始新一轮调度");
+
+  // 重置进度显示
+  ui->taskIndexLabel->setText("0");
+
+  // 刷新任务总数
+  const int taskCount = TaskStore::get().loadAll().size();
+  ui->taskCountLabel->setText(QString::number(taskCount));
+
+  // 清空所有任务的实际执行时间
+  for (int i = 0; i < ui->listWidget->count(); ++i) {
+    QListWidgetItem *item = ui->listWidget->item(i);
+    auto *widget =
+        dynamic_cast<TaskItemWidget *>(ui->listWidget->itemWidget(item));
+    if (widget) {
+      widget->setActualTime(QTime()); // 传入无效时间表示清空
+    }
+  }
+
   ToastWidget::showInfo(this, "新一天任务周期已开始");
 }
 
