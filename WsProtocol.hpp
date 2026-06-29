@@ -9,9 +9,6 @@ enum class MessageType { Command, Response, Event, Heartbeat };
 
 namespace Action {
 constexpr const char *OPEN_APP = "open_app";
-constexpr const char *CLOSE_APP = "close_app";
-constexpr const char *CAPTURE_SCREEN = "capture_screen";
-constexpr const char *GET_DEVICE_INFO = "get_device_info";
 } // namespace Action
 
 namespace Event {

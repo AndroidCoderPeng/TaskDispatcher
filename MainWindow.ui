@@ -309,7 +309,9 @@
                     <string>指令(&amp;C)</string>
                 </property>
                 <addaction name="actionCaptureScreen"/>
+                <addaction name="separator"/>
                 <addaction name="actionOpenTargetApp"/>
+                <addaction name="actionKillTargetApp"/>
             </widget>
             <widget class="QMenu" name="menuHelp">
                 <property name="title">
@@ -436,6 +438,11 @@
         <action name="actionOpenTargetApp">
             <property name="text">
                 <string>打开目标应用</string>
+            </property>
+        </action>
+        <action name="actionKillTargetApp">
+            <property name="text">
+                <string>关闭目标应用</string>
             </property>
         </action>
         <action name="actionTestEmail">

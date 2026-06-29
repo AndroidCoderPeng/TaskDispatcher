@@ -29,6 +29,7 @@ public slots:
 
 private:
   Ui::MainWindow *ui;
+  QString targetPackage = "com.alibaba.android.rimet";
 
   // ====== 菜单栏 ======
   void onActionImportDataClicked();
@@ -50,6 +51,7 @@ private:
 
   void onActionCaptureScreenClicked();
   void onActionOpenTargetAppClicked();
+  void onActionKillTargetAppClicked();
 
   void onActionTestEmailClicked();
   void onActionTextWxClicked();

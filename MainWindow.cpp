@@ -105,6 +105,8 @@ MainWindow::MainWindow(QWidget *parent)
           &MainWindow::onActionCaptureScreenClicked);
   connect(ui->actionOpenTargetApp, &QAction::triggered, this,
           &MainWindow::onActionOpenTargetAppClicked);
+  connect(ui->actionKillTargetApp, &QAction::triggered, this,
+          &MainWindow::onActionKillTargetAppClicked);
 
   connect(ui->actionTestEmail, &QAction::triggered, this,
           &MainWindow::onActionTestEmailClicked);
@@ -306,25 +308,28 @@ void MainWindow::onActionWeWorkSettingClicked() {
   }
 }
 
+// TODO
+// 可能不再需要设置超时时间，应该叫等待时间，通过wss发消息给APP唤起目标应用，等到时间到，通过adb截屏，再通过adb杀掉目标应用
 void MainWindow::onActionOvertimeSettingClicked() {
-  int defaultValue = 30; // 默认 30 秒
-  QJsonObject saved = ConfigStore::get().load("overtimeConfig");
-  if (saved.contains("seconds")) {
-    defaultValue = saved["seconds"].toInt();
-  }
+  // int defaultValue = 30; // 默认 30 秒
+  // QJsonObject saved = ConfigStore::get().load("overtimeConfig");
+  // if (saved.contains("seconds")) {
+  //   defaultValue = saved["seconds"].toInt();
+  // }
 
-  bool ok = false;
-  const int seconds =
-      QInputDialog::getInt(this, "任务超时时间", "请输入任务超时时间（秒）",
-                           defaultValue, 10, 120, 1, &ok);
+  // bool ok = false;
+  // const int seconds =
+  //     QInputDialog::getInt(this, "任务超时时间", "请输入任务超时时间（秒）",
+  //                          defaultValue, 10, 120, 1, &ok);
 
-  if (ok) {
-    QJsonObject obj;
-    obj["seconds"] = seconds;
-    ConfigStore::get().save("overtimeConfig", obj);
-    ToastWidget::showInfo(this,
-                          QString("任务超时时间已设置为 %1 秒").arg(seconds));
-  }
+  // if (ok) {
+  //   QJsonObject obj;
+  //   obj["seconds"] = seconds;
+  //   ConfigStore::get().save("overtimeConfig", obj);
+  //   ToastWidget::showInfo(this,
+  //                         QString("任务超时时间已设置为 %1
+  //                         秒").arg(seconds));
+  // }
 }
 
 void MainWindow::onActionResetTaskSettingClicked() {
@@ -468,6 +473,14 @@ void MainWindow::onActionOpenTargetAppClicked() {
     return;
   }
   observer->sendMessage(WsProtocol::Action::OPEN_APP);
+}
+
+void MainWindow::onActionKillTargetAppClicked() {
+  QProcess *process = new QProcess(this);
+  connect(process,
+          QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
+          process, &QProcess::deleteLater);
+  process->start("adb", {"shell", "am", "force-stop", targetPackage});
 }
 
 void MainWindow::onActionTestEmailClicked() {
