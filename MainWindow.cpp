@@ -416,6 +416,7 @@ void MainWindow::onActionOpenResetTaskSettingToggled(bool checked) {
 }
 
 void MainWindow::onActionDarkThemeToggled(bool checked) {
+  TaskItemWidget::setDarkTheme(checked);
   if (checked) {
     QFile styleFile(":/style_dark.qss");
     if (styleFile.open(QFile::ReadOnly | QFile::Text)) {
@@ -429,6 +430,7 @@ void MainWindow::onActionDarkThemeToggled(bool checked) {
       styleFile.close();
     }
   }
+  updateTaskListWidget();
 }
 
 void MainWindow::onActionSyncDataClicked() {

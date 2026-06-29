@@ -20,12 +20,19 @@ public:
 
   qint32 taskId() const;
 
+  static bool isDarkTheme();
+  static void setDarkTheme(bool dark);
+
 private:
   void setupUi();
 
   Task mTask;
+  QLabel *mScheduledPrefixPtr;
   QLabel *mTimeLabelPtr;
+  QLabel *mActualPrefixPtr;
   QLabel *mActualTimeLabelPtr;
+
+  static bool sDarkTheme;
 };
 
 #endif // TASKITEMWIDGET_HPP
