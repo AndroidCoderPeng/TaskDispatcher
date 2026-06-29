@@ -292,9 +292,9 @@
                 <addaction name="actionResetTaskSetting"/>
                 <addaction name="actionRandomTimeSetting"/>
                 <addaction name="separator"/>
+                <addaction name="actionOpenRandomTimeSetting"/>
                 <addaction name="actionSkipHolidaySetting"/>
                 <addaction name="actionOpenResetTaskSetting"/>
-                <addaction name="actionOpenRandomTimeSetting"/>
                 <addaction name="separator"/>
                 <addaction name="actionDarkTheme"/>
             </widget>
@@ -381,7 +381,18 @@
         </action>
         <action name="actionRandomTimeSetting">
             <property name="text">
-                <string>任务随机时间</string>
+                <string>任务波动时间</string>
+            </property>
+        </action>
+        <action name="actionOpenRandomTimeSetting">
+            <property name="checkable">
+                <bool>true</bool>
+            </property>
+            <property name="checked">
+                <bool>true</bool>
+            </property>
+            <property name="text">
+                <string>波动时间</string>
             </property>
         </action>
         <action name="actionSkipHolidaySetting">
@@ -404,17 +415,6 @@
             </property>
             <property name="text">
                 <string>重置任务</string>
-            </property>
-        </action>
-        <action name="actionOpenRandomTimeSetting">
-            <property name="checkable">
-                <bool>true</bool>
-            </property>
-            <property name="checked">
-                <bool>true</bool>
-            </property>
-            <property name="text">
-                <string>随机时间</string>
             </property>
         </action>
         <action name="actionDarkTheme">

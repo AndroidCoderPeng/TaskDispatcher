@@ -88,12 +88,12 @@ MainWindow::MainWindow(QWidget *parent)
           &MainWindow::onActionResetTaskSettingClicked);
   connect(ui->actionRandomTimeSetting, &QAction::triggered, this,
           &MainWindow::onActionRandomTimeSettingClicked);
+  connect(ui->actionOpenRandomTimeSetting, &QAction::toggled, this,
+          &MainWindow::onActionOpenRandomTimeSettingToggled);
   connect(ui->actionSkipHolidaySetting, &QAction::toggled, this,
           &MainWindow::onActionSkipHolidaySettingToggled);
   connect(ui->actionOpenResetTaskSetting, &QAction::toggled, this,
           &MainWindow::onActionOpenResetTaskSettingToggled);
-  connect(ui->actionOpenRandomTimeSetting, &QAction::toggled, this,
-          &MainWindow::onActionOpenRandomTimeSettingToggled);
 
   connect(ui->actionDarkTheme, &QAction::toggled, this,
           &MainWindow::onActionDarkThemeToggled);
@@ -371,6 +371,12 @@ void MainWindow::onActionRandomTimeSettingClicked() {
   }
 }
 
+void MainWindow::onActionOpenRandomTimeSettingToggled(bool checked) {
+  QJsonObject obj;
+  obj["openRandomTime"] = checked;
+  ConfigStore::get().save("openRandomTimeConfig", obj);
+}
+
 void MainWindow::onActionSkipHolidaySettingToggled(bool checked) {
   QJsonObject obj;
   obj["skipHoliday"] = checked;
@@ -381,12 +387,6 @@ void MainWindow::onActionOpenResetTaskSettingToggled(bool checked) {
   QJsonObject obj;
   obj["openResetTask"] = checked;
   ConfigStore::get().save("openResetTaskConfig", obj);
-}
-
-void MainWindow::onActionOpenRandomTimeSettingToggled(bool checked) {
-  QJsonObject obj;
-  obj["openRandomTime"] = checked;
-  ConfigStore::get().save("openRandomTimeConfig", obj);
 }
 
 void MainWindow::onActionDarkThemeToggled(bool checked) {
@@ -539,8 +539,20 @@ void MainWindow::onExecuteTaskButtonClicked() {
     return;
   }
 
+  // QJsonObject randomTimeConfig = ConfigStore::get().load("randomTimeConfig");
+  // if (randomTimeConfig.contains("minutes")) {
+  //   const auto randomTime = randomTimeConfig["minutes"].toInt();
+  // }
+
+  // bool isSkipHoliday = true;
+  // QJsonObject skipHolidayConfig =
+  // ConfigStore::get().load("skipHolidayConfig"); if
+  // (skipHolidayConfig.contains("skipHoliday")) {
+  //   isSkipHoliday = skipHolidayConfig["skipHoliday"].toBool();
+  // }
+
   // TODO
-  // 可以执行链式任务了，还需要考虑任务波动时间配置是否开启，以及节假日是否跳过的配置
+  // 可以执行链式任务了，还需要考虑任务波动时间配置是否开启
 }
 
 void MainWindow::onAddTaskButtonClicked() {

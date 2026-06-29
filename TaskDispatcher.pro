@@ -21,6 +21,7 @@ SOURCES += \
     DispatcherApplication.cpp \
     MailSender.cpp \
     ResetTaskSettingDialog.cpp \
+    TaskExecutor.cpp \
     TaskItemWidget.cpp \
     TaskStore.cpp \
     ToastWidget.cpp \
@@ -41,6 +42,7 @@ HEADERS += \
     MailSender.hpp \
     MainWindow.hpp \
     ResetTaskSettingDialog.hpp \
+    TaskExecutor.hpp \
     TaskItemWidget.hpp \
     TaskStore.hpp \
     ToastWidget.hpp \
