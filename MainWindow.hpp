@@ -34,6 +34,9 @@ public slots:
 
   void slotCaptureFailed(const QString &message);
 
+  void slotNextTaskScheduled(int nextIndex, const QDateTime &predictedTime,
+                             qint32 nextTaskId);
+
 private:
   Ui::MainWindow *ui;
   QString targetPackage = "com.alibaba.android.rimet";

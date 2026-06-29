@@ -84,7 +84,7 @@ void TaskItemWidget::setupUi() {
   mActualTimeLabelPtr->setAlignment(Qt::AlignCenter);
   mActualTimeLabelPtr->setMinimumWidth(42);
   QFont actualFont = mActualTimeLabelPtr->font();
-  actualFont.setPointSize(10);
+  actualFont.setPointSize(12);
   mActualTimeLabelPtr->setFont(actualFont);
 
   layout->addWidget(mScheduledPrefixPtr);
@@ -106,7 +106,7 @@ void TaskItemWidget::setActualTime(const QTime &time) {
     mActualTimeLabelPtr->setText(QStringLiteral("—"));
     mActualTimeLabelPtr->setStyleSheet("");
   } else {
-    mActualTimeLabelPtr->setText(time.toString("HH:mm"));
+    mActualTimeLabelPtr->setText(time.toString("HH:mm:ss"));
     mActualTimeLabelPtr->setStyleSheet(
         "QLabel { color: #007AFF; font-weight: bold; }");
   }

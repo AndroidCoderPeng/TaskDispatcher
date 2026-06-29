@@ -150,6 +150,8 @@ MainWindow::MainWindow(QWidget *parent)
 
   // 创建任务执行器并连接信号
   taskExecutorPtr = new TaskExecutor(this);
+  connect(taskExecutorPtr, &TaskExecutor::signalNextTaskScheduled, this,
+          &MainWindow::slotNextTaskScheduled);
 
   // 创建进程执行器并连接信号
   processExecutorPtr = new ProcessExecutor(this);
@@ -293,9 +295,9 @@ void MainWindow::onActionExportDataClicked() {
 }
 
 void MainWindow::onActionCloseClicked() {
-  if (QMessageBox::question(this, "确认", "确定要退出程序吗？",
-                            QMessageBox::Yes | QMessageBox::No) ==
-      QMessageBox::Yes) {
+  const auto ret = QMessageBox::question(this, "确认", "确定要退出程序吗？",
+                                         QMessageBox::Yes | QMessageBox::No);
+  if (ret == QMessageBox::Yes) {
     QTimer::singleShot(0, this, &QCoreApplication::quit);
   }
 }
@@ -555,9 +557,10 @@ void MainWindow::killTargetApp() {
 
 void MainWindow::onOpenSocketButtonClicked() {
   if (WebSocketObserver::get()->isServerRunning()) {
-    if (QMessageBox::question(this, "确认", "确定要关闭通信服务吗？",
-                              QMessageBox::Yes | QMessageBox::No) ==
-        QMessageBox::Yes) {
+    const auto ret =
+        QMessageBox::question(this, "确认", "确定要关闭通信服务吗？",
+                              QMessageBox::Yes | QMessageBox::No);
+    if (ret == QMessageBox::Yes) {
       WebSocketObserver::get()->stopServer();
       // 任务也需要一起关闭
       stopTask();
@@ -624,9 +627,9 @@ void MainWindow::onCustomAction(const QListWidgetItem *item,
     }
   } else if (message == "1") {
     // 删除
-    if (QMessageBox::question(this, "确认", "确定要删除该任务吗？",
-                              QMessageBox::Yes | QMessageBox::No) ==
-        QMessageBox::Yes) {
+    const auto ret = QMessageBox::question(this, "确认", "确定要删除该任务吗？",
+                                           QMessageBox::Yes | QMessageBox::No);
+    if (ret == QMessageBox::Yes) {
       TaskStore::get().remove(id);
       updateTaskListWidget();
     }
@@ -669,6 +672,24 @@ void MainWindow::slotScreenCaptured(const QString &filePath) {
 void MainWindow::slotCaptureFailed(const QString &message) {
   MailSender::get()->sendEmail("截屏失败", message);
   ToastWidget::showError(this, message);
+}
+
+void MainWindow::slotNextTaskScheduled(int nextIndex,
+                                       const QDateTime &predictedTime,
+                                       qint32 nextTaskId) {
+  // 更新任务进度
+  ui->taskIndexLabel->setText(QString("%1").arg(nextIndex));
+
+  // 在 listWidget 中查找对应 taskId 的 TaskItemWidget 并设置实际执行时间
+  for (int i = 0; i < ui->listWidget->count(); ++i) {
+    QListWidgetItem *item = ui->listWidget->item(i);
+    auto *widget =
+        dynamic_cast<TaskItemWidget *>(ui->listWidget->itemWidget(item));
+    if (widget && widget->taskId() == nextTaskId) {
+      widget->setActualTime(predictedTime.time());
+      break;
+    }
+  }
 }
 
 void MainWindow::updateCountDown() {
