@@ -10,7 +10,7 @@
 
 TaskExecutor::TaskExecutor(QObject *parent) : QObject(parent) {
   timer.setSingleShot(true);
-  connect(&timer, &QTimer::timeout, this, &TaskExecutor::executeNextTask);
+  connect(&timer, &QTimer::timeout, this, &TaskExecutor::onTimerTimeout);
 }
 
 void TaskExecutor::setTasks(const QList<Task> &newTasks) {
@@ -27,37 +27,35 @@ void TaskExecutor::setRandomTimeConfig(bool enabled, int maxMinutes) {
 
 void TaskExecutor::setResetTime(const QTime &time) { resetTime = time; }
 
-void TaskExecutor::addTask(const Task &task) {
-  Task t = task;
-  t.status = TaskStatus::Pending;
-  tasks.append(t);
-}
+void TaskExecutor::addTask(const Task &task) { tasks.append(task); }
 
 void TaskExecutor::clearTasks() {
   tasks.clear();
   currentIndex = 0;
 }
 
+/// ==================== 私有辅助方法 ====================
 int TaskExecutor::calculateDelayToNextMs() const {
   if (currentIndex >= tasks.size()) {
     return 0;
   }
 
   const QTime now = QTime::currentTime();
-  const int nowMinutes = now.hour() * 60 + now.minute();
+  const int nowSeconds = now.hour() * 3600 + now.minute() * 60 + now.second();
 
   const QTime scheduled = tasks.at(currentIndex).scheduledTime.time();
-  int targetMinutes = scheduled.hour() * 60 + scheduled.minute();
+  int targetSeconds =
+      scheduled.hour() * 3600 + scheduled.minute() * 60 + scheduled.second();
 
-  if (randomEnabled) {
-    // 使用 const_cast 在 const 方法中写入随机偏移（仅在定时器触发时调用，线程安全）
-    const_cast<TaskExecutor *>(this)->currentRandomOffset =
-        QRandomGenerator::global()->bounded(randomMaxMinutes + 1);
-    targetMinutes += currentRandomOffset;
+  // 第二层：添加随机时间波动
+  if (randomEnabled && randomMaxMinutes > 0) {
+    const int randomOffsetSeconds =
+        QRandomGenerator::global()->bounded(randomMaxMinutes * 60);
+    targetSeconds += randomOffsetSeconds;
   }
 
-  const int delayMinutes = targetMinutes - nowMinutes;
-  return delayMinutes > 0 ? delayMinutes * 60 * 1000 : 0;
+  const int delaySeconds = targetSeconds - nowSeconds;
+  return delaySeconds > 0 ? delaySeconds * 1000 : 0;
 }
 
 int TaskExecutor::calculateDelayToResetMs() const {
@@ -82,25 +80,48 @@ void TaskExecutor::reloadTasks() {
 
 int TaskExecutor::skipPastTasks(int startIndex) const {
   const QTime now = QTime::currentTime();
-  const int nowMinutes = now.hour() * 60 + now.minute();
+  const int nowSeconds = now.hour() * 3600 + now.minute() * 60 + now.second();
 
   int idx = startIndex;
   while (idx < tasks.size()) {
     const QTime taskTime = tasks.at(idx).scheduledTime.time();
-    int taskMinutes = taskTime.hour() * 60 + taskTime.minute();
-    if (randomEnabled) {
-      taskMinutes += randomMaxMinutes; // 考虑随机偏移的最晚可能时间
+    int taskSeconds =
+        taskTime.hour() * 3600 + taskTime.minute() * 60 + taskTime.second();
+
+    // 考虑随机偏移的最晚可能时间
+    if (randomEnabled && randomMaxMinutes > 0) {
+      taskSeconds += randomMaxMinutes * 60;
     }
-    if (taskMinutes <= nowMinutes) {
+
+    if (taskSeconds <= nowSeconds) {
       Logger::Tag("TaskExecutor")
           .dFmt("跳过已过期任务: %s",
-                taskTime.toString("HH:mm").toStdString().c_str());
+                taskTime.toString("HH:mm:ss").toStdString().c_str());
       idx++;
     } else {
       break;
     }
   }
   return idx;
+}
+
+/// ==================== 核心调度逻辑 ====================
+void TaskExecutor::onTimerTimeout() {
+  if (!running) {
+    return;
+  }
+
+  // 第三层：检查是否为节假日
+  if (skipHoliday &&
+      ChinaHolidayManager::get()->isHoliday(QDate::currentDate())) {
+    Logger::Tag("TaskExecutor").d("检测到节假日，跳过今日所有任务");
+    emit signalHolidaySkipped();
+    waitForReset();
+    return;
+  }
+
+  // 第一层：执行下一个任务
+  executeNextTask();
 }
 
 void TaskExecutor::start() {
@@ -121,7 +142,7 @@ void TaskExecutor::start() {
 
   running = true;
 
-  // 跳过当前时间已过的任务，直接从下一个未到期任务开始
+  // 跳过当前时间已过的任务
   currentIndex = skipPastTasks(0);
 
   Logger::Tag("TaskExecutor")
@@ -132,21 +153,18 @@ void TaskExecutor::start() {
   if (currentIndex >= tasks.size()) {
     // 所有任务已过期，直接进入等待重置状态
     emit signalDayFinished();
-    const int delayMs = calculateDelayToResetMs();
-    Logger::Tag("TaskExecutor")
-        .dFmt("所有任务已过期，%lld 秒后等待重置", delayMs / 1000);
-    disconnect(&timer, &QTimer::timeout, this, &TaskExecutor::executeNextTask);
-    connect(&timer, &QTimer::timeout, this, &TaskExecutor::startNewCycle);
-    timer.start(delayMs);
+    waitForReset();
     return;
   }
 
+  // 启动第一个任务计时器
   const int delayMs = calculateDelayToNextMs();
   if (delayMs > 0) {
-    emitNextTaskInfo(); // 预显示第一个待执行任务
+    emitNextTaskInfo();
     timer.start(delayMs);
   } else {
-    executeNextTask();
+    // 立即执行
+    onTimerTimeout();
   }
 }
 
@@ -163,75 +181,92 @@ void TaskExecutor::stop() {
 bool TaskExecutor::isRunning() const { return running; }
 
 void TaskExecutor::executeNextTask() {
-  if (!running) {
-    return;
-  }
-
-  // 当天所有任务已执行完毕 → 等待任务重置点，开启下一天
-  if (currentIndex >= tasks.size()) {
+  if (!running || currentIndex >= tasks.size()) {
+    // 所有任务执行完毕
     emit signalDayFinished();
-
-    const int delayMs = calculateDelayToResetMs();
-    Logger::Tag("TaskExecutor")
-        .dFmt("当日任务全部完成，%lld 秒后重置", delayMs / 1000);
-
-    disconnect(&timer, &QTimer::timeout, this, &TaskExecutor::executeNextTask);
-    connect(&timer, &QTimer::timeout, this, &TaskExecutor::startNewCycle);
-    timer.start(delayMs);
+    waitForReset();
     return;
   }
 
-  // 每个节点执行前检查节假日
-  if (skipHoliday &&
-      ChinaHolidayManager::get()->isHoliday(QDate::currentDate())) {
-    emit signalHolidaySkipped();
-
-    // 当日跳过，等待重置点
-    const int delayMs = calculateDelayToResetMs();
-    Logger::Tag("TaskExecutor")
-        .dFmt("节假日：当日任务已跳过，%lld 秒后重置", delayMs / 1000);
-
-    disconnect(&timer, &QTimer::timeout, this, &TaskExecutor::executeNextTask);
-    connect(&timer, &QTimer::timeout, this, &TaskExecutor::startNewCycle);
-    timer.start(delayMs);
-    return;
-  }
-
-  // 执行当前任务：计算实际执行时间（计划时间 + 随机偏移）
+  // 获取当前任务
   const Task currentTask = tasks.at(currentIndex);
-  const QDateTime actualTime =
-      currentTask.scheduledTime.addSecs(currentRandomOffset * 60);
+
+  // 计算实际执行时间（计划时间 + 随机偏移）
+  QDateTime actualTime = currentTask.scheduledTime;
+  if (randomEnabled && randomMaxMinutes > 0) {
+    const int randomOffsetSeconds =
+        QRandomGenerator::global()->bounded(randomMaxMinutes * 60);
+    actualTime = actualTime.addSecs(randomOffsetSeconds);
+  }
+
   const int totalTasks = tasks.size();
   const qint32 taskId = currentTask.id;
   const int progress = currentIndex + 1; // 1-based
 
+  // 发送任务执行信号到 MainWindow
   emit signalTaskExecuted(actualTime, taskId, progress, totalTasks);
 
-  currentIndex++;
-  if (currentIndex < tasks.size()) {
-    // 恢复到正常连接
-    disconnect(&timer, &QTimer::timeout, this, &TaskExecutor::startNewCycle);
-    connect(&timer, &QTimer::timeout, this, &TaskExecutor::executeNextTask);
+  Logger::Tag("TaskExecutor")
+      .dFmt("执行任务 %d/%d (ID=%d), 实际时间=%s", progress, totalTasks, taskId,
+            actualTime.toString("HH:mm:ss").toStdString().c_str());
 
+  // 移动到下一个任务
+  currentIndex++;
+
+  if (currentIndex < tasks.size()) {
+    // 还有任务，继续调度
     const int delayMs = calculateDelayToNextMs();
-    emitNextTaskInfo(); // 预显示下一个待执行任务
+    emitNextTaskInfo();
 
     if (delayMs > 0) {
       timer.start(delayMs);
     } else {
-      executeNextTask();
+      // 立即执行下一个
+      onTimerTimeout();
     }
   } else {
-    // 已经是最后一个任务，进入"等待重置"状态
+    // 所有任务执行完毕
     emit signalDayFinished();
+    waitForReset();
+  }
+}
 
-    const int delayMs = calculateDelayToResetMs();
-    Logger::Tag("TaskExecutor")
-        .dFmt("当日任务全部完成，%lld 秒后重置", delayMs / 1000);
+void TaskExecutor::waitForReset() {
+  const int delayMs = calculateDelayToResetMs();
+  Logger::Tag("TaskExecutor")
+      .dFmt("等待 %lld 秒后开始新的一天周期", delayMs / 1000);
+  timer.start(delayMs);
+}
 
-    disconnect(&timer, &QTimer::timeout, this, &TaskExecutor::executeNextTask);
-    connect(&timer, &QTimer::timeout, this, &TaskExecutor::startNewCycle);
+void TaskExecutor::startNewCycle() {
+  if (!running) {
+    return;
+  }
+
+  reloadTasks();
+  emit signalCycleReset();
+
+  if (tasks.isEmpty()) {
+    Logger::Tag("TaskExecutor").w("新周期无任务，等待下一个重置点");
+    waitForReset();
+    return;
+  }
+
+  // 跳过已过期的任务
+  currentIndex = skipPastTasks(0);
+
+  if (currentIndex >= tasks.size()) {
+    emit signalDayFinished();
+    waitForReset();
+    return;
+  }
+
+  const int delayMs = calculateDelayToNextMs();
+  if (delayMs > 0) {
+    emitNextTaskInfo();
     timer.start(delayMs);
+  } else {
+    onTimerTimeout();
   }
 }
 
@@ -240,39 +275,14 @@ void TaskExecutor::emitNextTaskInfo() {
     return;
   }
   const Task &task = tasks.at(currentIndex);
-  const QDateTime predicted =
-      task.scheduledTime.addSecs(currentRandomOffset * 60);
+
+  // 计算预计执行时间（含随机偏移）
+  QDateTime predicted = task.scheduledTime;
+  if (randomEnabled && randomMaxMinutes > 0) {
+    const int randomOffsetSeconds =
+        QRandomGenerator::global()->bounded(randomMaxMinutes * 60);
+    predicted = predicted.addSecs(randomOffsetSeconds);
+  }
+
   emit signalNextTaskScheduled(currentIndex + 1, predicted, task.id);
-}
-
-void TaskExecutor::startNewCycle() {
-  if (!running) {
-    return;
-  }
-
-  // 恢复信号连接到正常执行
-  disconnect(&timer, &QTimer::timeout, this, &TaskExecutor::startNewCycle);
-  connect(&timer, &QTimer::timeout, this, &TaskExecutor::executeNextTask);
-
-  reloadTasks();
-  emit signalCycleReset();
-
-  if (tasks.isEmpty()) {
-    // 如果用户删除了所有任务，再等一天
-    Logger::Tag("TaskExecutor").w("新周期无任务，等待下一个重置点");
-    const int delayMs = calculateDelayToResetMs();
-    timer.start(delayMs);
-    // 重新连接到 startNewCycle
-    disconnect(&timer, &QTimer::timeout, this, &TaskExecutor::executeNextTask);
-    connect(&timer, &QTimer::timeout, this, &TaskExecutor::startNewCycle);
-    return;
-  }
-
-  const int delayMs = calculateDelayToNextMs();
-  if (delayMs > 0) {
-    emitNextTaskInfo(); // 预显示第一个待执行任务
-    timer.start(delayMs);
-  } else {
-    executeNextTask();
-  }
 }

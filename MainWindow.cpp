@@ -506,64 +506,26 @@ void MainWindow::onExecuteTaskButtonClicked() {
     return;
   }
 
+  // 检查通信服务状态
   if (!WebSocketObserver::get()->isServerRunning()) {
     ToastWidget::showWarning(this, "通信服务未开启，请先开启通信服务");
     return;
   }
 
+  // 检查是否有任务
   const auto tasks = TaskStore::get().loadAll();
   if (tasks.isEmpty()) {
     ToastWidget::showWarning(this, "没有任务可以执行，请先添加任务");
     return;
   }
 
-  // —— 读取配置并注入执行器 ——
-  bool skipHoliday = false;
-  {
-    const QJsonObject cfg = ConfigStore::get().load("skipHolidayConfig");
-    if (cfg.contains("skipHoliday")) {
-      skipHoliday = cfg["skipHoliday"].toBool();
-    }
-  }
-
-  bool randomEnabled = true;
-  {
-    const QJsonObject cfg = ConfigStore::get().load("openRandomTimeConfig");
-    if (cfg.contains("openRandomTime")) {
-      randomEnabled = cfg["openRandomTime"].toBool();
-    }
-  }
-
-  int randomMinutes = 5;
-  {
-    const QJsonObject cfg = ConfigStore::get().load("randomTimeConfig");
-    if (cfg.contains("minutes")) {
-      randomMinutes = cfg["minutes"].toInt();
-    }
-  }
-
-  // 读取任务重置时间，默认 0 点
-  QTime resetTime(0, 0);
-  {
-    const QJsonObject cfg = ConfigStore::get().load("resetTaskConfig");
-    if (cfg.contains("time")) {
-      resetTime = QTime::fromString(cfg["time"].toString(), "HH:mm:ss");
-    }
-  }
-
-  // 配置并启动——后续时间判定、随机偏移、节假日检查、循环重置全由执行器内部完成
-  taskExecutorPtr->setSkipHoliday(skipHoliday);
-  taskExecutorPtr->setRandomTimeConfig(randomEnabled, randomMinutes);
-  taskExecutorPtr->setResetTime(resetTime);
-  taskExecutorPtr->start();
+  // 加载配置并启动任务执行器
+  startTaskExecutor();
 
   // 按钮变为运行状态
   ui->executeTaskButton->setText("停止任务");
 
-  Logger::Tag("MainWindow")
-      .dFmt("链式任务已启动，共 %d 个任务，随机=%s，跳过节假日=%s",
-            tasks.size(), randomEnabled ? "是" : "否",
-            skipHoliday ? "是" : "否");
+  Logger::Tag("MainWindow").dFmt("链式任务已启动，共 %d 个任务", tasks.size());
 }
 
 void MainWindow::onAddTaskButtonClicked() {
@@ -685,50 +647,66 @@ void MainWindow::resetTaskState() {
     Logger::Tag("MainWindow").d("已停止任务执行器");
   }
 
-  // 2. 清除数据库中所有任务的状态（将所有任务状态重置为 Pending）
+  // 2. 获取任务列表并更新UI显示
   QList<Task> allTasks = TaskStore::get().loadAll();
-  int resetCount = 0;
-  for (auto &task : allTasks) {
-    if (task.status != TaskStatus::Pending) {
-      task.status = TaskStatus::Pending;
-      TaskStore::get().update(task);
-      resetCount++;
-    }
-  }
-  Logger::Tag("MainWindow").dFmt("已重置 %d 个任务的状态", resetCount);
-
-  // 3. 更新UI显示
   updateTaskListWidget();
   ui->taskCountLabel->setText(QString::number(allTasks.size()));
 
   // 4. 重新启动任务执行器，开始新的一天任务
   if (taskExecutorPtr) {
-    // 重新加载配置
-    QJsonObject resetTaskConfig = ConfigStore::get().load("resetTaskConfig");
-    const QString resetTimeStr = resetTaskConfig.contains("time")
-                                     ? resetTaskConfig["time"].toString()
-                                     : QString("00:00:00");
-    const QTime resetTime = QTime::fromString(resetTimeStr, "HH:mm:ss");
-
-    QJsonObject randomTimeConfig = ConfigStore::get().load("randomTimeConfig");
-    bool randomEnabled = randomTimeConfig.contains("enabled")
-                             ? randomTimeConfig["enabled"].toBool()
-                             : false;
-    int randomMinutes = randomTimeConfig.contains("maxMinutes")
-                            ? randomTimeConfig["maxMinutes"].toInt()
-                            : 5;
-
-    bool skipHoliday =
-        ConfigStore::get().load("skipHolidayConfig").value("enabled").toBool();
-
-    taskExecutorPtr->setSkipHoliday(skipHoliday);
-    taskExecutorPtr->setRandomTimeConfig(randomEnabled, randomMinutes);
-    taskExecutorPtr->setResetTime(resetTime);
-    taskExecutorPtr->start();
-
+    startTaskExecutor();
     Logger::Tag("MainWindow").d("任务执行器已重新启动，开始新的一天任务");
     ToastWidget::showInfo(this, "任务状态已重置，新的一天任务已开始");
   }
+}
+
+// 从配置中加载参数并启动任务执行器
+void MainWindow::startTaskExecutor() {
+  // 读取节假日跳过配置
+  bool skipHoliday = false;
+  {
+    const QJsonObject cfg = ConfigStore::get().load("skipHolidayConfig");
+    if (cfg.contains("skipHoliday")) {
+      skipHoliday = cfg["skipHoliday"].toBool();
+    }
+  }
+
+  // 读取随机时间配置
+  bool randomEnabled = true;
+  int randomMinutes = 5;
+  {
+    const QJsonObject cfg = ConfigStore::get().load("openRandomTimeConfig");
+    if (cfg.contains("openRandomTime")) {
+      randomEnabled = cfg["openRandomTime"].toBool();
+    }
+  }
+  {
+    const QJsonObject cfg = ConfigStore::get().load("randomTimeConfig");
+    if (cfg.contains("minutes")) {
+      randomMinutes = cfg["minutes"].toInt();
+    }
+  }
+
+  // 读取任务重置时间，默认 0 点
+  QTime resetTime(0, 0);
+  {
+    const QJsonObject cfg = ConfigStore::get().load("resetTaskConfig");
+    if (cfg.contains("time")) {
+      resetTime = QTime::fromString(cfg["time"].toString(), "HH:mm:ss");
+    }
+  }
+
+  // 配置并启动执行器
+  taskExecutorPtr->setSkipHoliday(skipHoliday);
+  taskExecutorPtr->setRandomTimeConfig(randomEnabled, randomMinutes);
+  taskExecutorPtr->setResetTime(resetTime);
+  taskExecutorPtr->start();
+
+  Logger::Tag("MainWindow")
+      .dFmt("执行器配置: 随机=%s (%d分钟), 跳过节假日=%s, 重置时间=%s",
+            randomEnabled ? "是" : "否", randomMinutes,
+            skipHoliday ? "是" : "否",
+            resetTime.toString("HH:mm").toStdString().c_str());
 }
 
 MainWindow::~MainWindow() { delete ui; }

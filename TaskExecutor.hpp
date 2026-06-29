@@ -45,11 +45,15 @@ signals:
   void signalCycleReset();
 
 private slots:
-  void executeNextTask();
-  void startNewCycle();
+  void onTimerTimeout();
 
 private:
+  /// ==================== 辅助方法 ====================
+
+  // 计算到下一个任务的延迟（毫秒），包含第二层逻辑：随机时间波动
   int calculateDelayToNextMs() const;
+
+  // 计算到重置时间的延迟（毫秒）
   int calculateDelayToResetMs() const;
 
   // 重新从 TaskStore 加载任务，重置索引，排序
@@ -58,9 +62,19 @@ private:
   // 跳过启动时已过时间的任务，返回实际起始索引
   int skipPastTasks(int startIndex) const;
 
-  // 发射 signalNextTaskScheduled（当前 currentIndex 必须已指向下一任务且
-  // currentRandomOffset 已就绪）
+  // 发射 signalNextTaskScheduled
   void emitNextTaskInfo();
+
+  /// ==================== 核心调度逻辑 ====================
+
+  // 执行下一个任务（第一层核心逻辑）
+  void executeNextTask();
+
+  // 等待重置时间（进入下一天周期）
+  void waitForReset();
+
+  // 开始新的周期（重置时间到达）
+  void startNewCycle();
 
   QList<Task> tasks;
   QTimer timer;
@@ -69,7 +83,6 @@ private:
   bool skipHoliday = false;
   bool randomEnabled = false;
   int randomMaxMinutes = 5;
-  int currentRandomOffset = 0;   // 当前任务的随机偏移（分钟）
   QTime resetTime = QTime(0, 0); // 默认 0 点重置
 };
 

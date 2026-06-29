@@ -76,6 +76,8 @@ private:
 
   void resetTaskState();
 
+  void startTaskExecutor();
+
   void updateTaskListWidget();
 
   void captureScreen();
