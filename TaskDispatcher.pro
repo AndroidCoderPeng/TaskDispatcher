@@ -23,6 +23,7 @@ SOURCES += \
     ResetTaskSettingDialog.cpp \
     TaskItemWidget.cpp \
     TaskStore.cpp \
+    ToastWidget.cpp \
     WebSocketObserver.cpp \
     WxMessageSender.cpp \
     WxSettingDialog.cpp \
@@ -42,6 +43,7 @@ HEADERS += \
     ResetTaskSettingDialog.hpp \
     TaskItemWidget.hpp \
     TaskStore.hpp \
+    ToastWidget.hpp \
     WebSocketObserver.hpp \
     WsProtocol.hpp \
     WxMessageSender.hpp \
