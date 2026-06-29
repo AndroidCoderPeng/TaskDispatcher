@@ -4,6 +4,7 @@
 #include <QMainWindow>
 
 #include "GlobalDefinition.hpp"
+#include "TaskExecutor.hpp"
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -27,9 +28,19 @@ public slots:
 
   void slotDataReceived(const QString &message);
 
+private slots:
+  void onTaskExecuted(const QDateTime &time);
+
+  void onDayFinished();
+
+  void onHolidaySkipped();
+
+  void onCycleReset();
+
 private:
   Ui::MainWindow *ui;
   QString targetPackage = "com.alibaba.android.rimet";
+  TaskExecutor *executorPtr = nullptr;
 
   // ====== 菜单栏 ======
   void onActionImportDataClicked();

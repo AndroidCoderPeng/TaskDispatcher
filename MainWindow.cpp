@@ -35,6 +35,8 @@
 #include <QTimer>
 #include <QVBoxLayout>
 
+#include <algorithm>
+
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent), ui(new Ui::MainWindow) {
   ui->setupUi(this);
@@ -140,6 +142,17 @@ MainWindow::MainWindow(QWidget *parent)
           [this](const QString &message) {
             ToastWidget::showError(this, message);
           });
+
+  // 创建任务执行器并连接信号
+  executorPtr = new TaskExecutor(this);
+  connect(executorPtr, &TaskExecutor::signalTaskExecuted, this,
+          &MainWindow::onTaskExecuted);
+  connect(executorPtr, &TaskExecutor::signalDayFinished, this,
+          &MainWindow::onDayFinished);
+  connect(executorPtr, &TaskExecutor::signalHolidaySkipped, this,
+          &MainWindow::onHolidaySkipped);
+  connect(executorPtr, &TaskExecutor::signalCycleReset, this,
+          &MainWindow::onCycleReset);
 }
 
 void MainWindow::onActionImportDataClicked() {
@@ -359,7 +372,7 @@ void MainWindow::onActionRandomTimeSettingClicked() {
 
   bool ok = false;
   const int minutes =
-      QInputDialog::getInt(this, "任务波动时间", "请输入任务波动时间（分钟）",
+      QInputDialog::getInt(this, "任务随机时间", "请输入任务随机时间（分钟）",
                            defaultValue, 3, 30, 1, &ok);
 
   if (ok) {
@@ -367,7 +380,7 @@ void MainWindow::onActionRandomTimeSettingClicked() {
     obj["minutes"] = minutes;
     ConfigStore::get().save("randomTimeConfig", obj);
     ToastWidget::showInfo(this,
-                          QString("任务波动时间已设置为 %1 分钟").arg(minutes));
+                          QString("任务随机时间已设置为 %1 分钟").arg(minutes));
   }
 }
 
@@ -534,25 +547,61 @@ void MainWindow::onExecuteTaskButtonClicked() {
     return;
   }
 
-  if (TaskStore::get().loadAll().isEmpty()) {
+  const auto tasks = TaskStore::get().loadAll();
+  if (tasks.isEmpty()) {
     ToastWidget::showWarning(this, "没有任务可以执行，请先添加任务");
     return;
   }
 
-  // QJsonObject randomTimeConfig = ConfigStore::get().load("randomTimeConfig");
-  // if (randomTimeConfig.contains("minutes")) {
-  //   const auto randomTime = randomTimeConfig["minutes"].toInt();
-  // }
+  if (executorPtr->isRunning()) {
+    ToastWidget::showWarning(this, "任务正在执行中，请等待当前任务完成");
+    return;
+  }
 
-  // bool isSkipHoliday = true;
-  // QJsonObject skipHolidayConfig =
-  // ConfigStore::get().load("skipHolidayConfig"); if
-  // (skipHolidayConfig.contains("skipHoliday")) {
-  //   isSkipHoliday = skipHolidayConfig["skipHoliday"].toBool();
-  // }
+  // —— 读取配置并注入执行器 ——
+  bool skipHoliday = false;
+  {
+    const QJsonObject cfg = ConfigStore::get().load("skipHolidayConfig");
+    if (cfg.contains("skipHoliday")) {
+      skipHoliday = cfg["skipHoliday"].toBool();
+    }
+  }
 
-  // TODO
-  // 可以执行链式任务了，还需要考虑任务波动时间配置是否开启
+  bool randomEnabled = true;
+  {
+    const QJsonObject cfg = ConfigStore::get().load("openRandomTimeConfig");
+    if (cfg.contains("openRandomTime")) {
+      randomEnabled = cfg["openRandomTime"].toBool();
+    }
+  }
+
+  int randomMinutes = 5;
+  {
+    const QJsonObject cfg = ConfigStore::get().load("randomTimeConfig");
+    if (cfg.contains("minutes")) {
+      randomMinutes = cfg["minutes"].toInt();
+    }
+  }
+
+  // 读取任务重置时间，默认 0 点
+  QTime resetTime(0, 0);
+  {
+    const QJsonObject cfg = ConfigStore::get().load("resetTaskConfig");
+    if (cfg.contains("time")) {
+      resetTime = QTime::fromString(cfg["time"].toString(), "HH:mm:ss");
+    }
+  }
+
+  // 配置并启动——后续时间判定、随机偏移、节假日检查、循环重置全由执行器内部完成
+  executorPtr->setSkipHoliday(skipHoliday);
+  executorPtr->setRandomTimeConfig(randomEnabled, randomMinutes);
+  executorPtr->setResetTime(resetTime);
+  executorPtr->start();
+
+  Logger::Tag("MainWindow")
+      .dFmt("链式任务已启动，共 %d 个任务，随机=%s，跳过节假日=%s",
+            tasks.size(), randomEnabled ? "是" : "否",
+            skipHoliday ? "是" : "否");
 }
 
 void MainWindow::onAddTaskButtonClicked() {
@@ -643,6 +692,82 @@ void MainWindow::updateCountDown() {
   ui->countDownLabel->setText(QString("距离重置任务还有 %1").arg(formatedTime));
 
   // TODO 如果倒计时结束，清楚所有任务状态，并重新开始新的一天任务
+}
+
+void MainWindow::onTaskExecuted(const QDateTime &time) {
+  // 单个任务触发时的处理：打开目标应用 → 等待延时 → 截屏 → 杀掉应用
+  const QString timeStr = time.toString("HH:mm:ss");
+  Logger::Tag("MainWindow").dFmt("执行任务: %s", timeStr.toStdString().c_str());
+
+  const auto observer = WebSocketObserver::get();
+  if (observer->isServerRunning()) {
+    observer->sendMessage(WsProtocol::Action::OPEN_APP);
+  }
+
+  // 读取任务等待时间（秒）
+  int delaySeconds = 30;
+  {
+    const QJsonObject cfg = ConfigStore::get().load("delayTimeConfig");
+    if (cfg.contains("seconds")) {
+      delaySeconds = cfg["seconds"].toInt();
+    }
+  }
+
+  // 延时后执行截屏和杀进程
+  QTimer::singleShot(delaySeconds * 1000, this, [this]() {
+    if (!executorPtr->isRunning()) {
+      return;
+    }
+    // 截屏
+    QProcess *captureProcess = new QProcess(this);
+    const QString captureDir =
+        QCoreApplication::applicationDirPath() + "/capture";
+    QDir dir(captureDir);
+    if (!dir.exists()) {
+      dir.mkpath(".");
+    }
+    const QString fileName =
+        QDateTime::currentDateTime().toString("yyyyMMdd_HHmmss") + ".png";
+    const QString filePath = captureDir + "/" + fileName;
+
+    connect(
+        captureProcess,
+        QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished), this,
+        [this, captureProcess, filePath](int exitCode, QProcess::ExitStatus) {
+          captureProcess->deleteLater();
+          if (exitCode == 0) {
+            QFile file(filePath);
+            if (file.open(QIODevice::WriteOnly)) {
+              file.write(captureProcess->readAllStandardOutput());
+              file.close();
+            }
+            Logger::Tag("MainWindow")
+                .dFmt("截屏已保存: %s", filePath.toStdString().c_str());
+          }
+        });
+    captureProcess->start("adb", {"exec-out", "screencap", "-p"});
+
+    // 杀掉目标应用
+    QProcess *killProcess = new QProcess(this);
+    connect(killProcess,
+            QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
+            killProcess, &QProcess::deleteLater);
+    killProcess->start("adb", {"shell", "am", "force-stop", targetPackage});
+  });
+}
+
+void MainWindow::onDayFinished() {
+  Logger::Tag("MainWindow").d("当日所有任务执行完毕，等待重置点");
+}
+
+void MainWindow::onHolidaySkipped() {
+  Logger::Tag("MainWindow").d("节假日检测：今日任务已跳过，等待重置点");
+  ToastWidget::showInfo(this, "当前为法定节假日，今日任务已跳过");
+}
+
+void MainWindow::onCycleReset() {
+  Logger::Tag("MainWindow").d("任务已重置，开始新一轮调度");
+  ToastWidget::showInfo(this, "新一天任务周期已开始");
 }
 
 MainWindow::~MainWindow() { delete ui; }
