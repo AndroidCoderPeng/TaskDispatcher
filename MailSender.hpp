@@ -19,6 +19,9 @@ public:
 
   void sendEmail(const QString &subject, const QString &body);
 
+  void sendAttachmentEmail(const QString &subject, const QString &body,
+                           const QString &attachmentPath);
+
 private slots:
   void onConnected();
   void onEncrypted();

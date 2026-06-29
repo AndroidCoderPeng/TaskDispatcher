@@ -4,7 +4,7 @@ win32 {
     RC_ICONS = application.ico
 }
 
-QT     += core gui widgets network websockets sql
+QT     += core gui widgets network websockets sql concurrent
 
 CONFIG += c++11
 

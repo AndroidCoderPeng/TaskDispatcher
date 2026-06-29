@@ -82,8 +82,8 @@ MainWindow::MainWindow(QWidget *parent)
           &MainWindow::onActionEmailSettingClicked);
   connect(ui->actionWeWorkSetting, &QAction::triggered, this,
           &MainWindow::onActionWeWorkSettingClicked);
-  connect(ui->actionTaskOvertimeSetting, &QAction::triggered, this,
-          &MainWindow::onActionOvertimeSettingClicked);
+  connect(ui->actionTaskDelayTimeSetting, &QAction::triggered, this,
+          &MainWindow::onActionDelayTimeSettingClicked);
   connect(ui->actionResetTaskSetting, &QAction::triggered, this,
           &MainWindow::onActionResetTaskSettingClicked);
   connect(ui->actionRandomTimeSetting, &QAction::triggered, this,
@@ -146,7 +146,7 @@ void MainWindow::onActionImportDataClicked() {
   const QString filePath =
       QFileDialog::getOpenFileName(this, "导入数据", "", "配置文件 (*.json)");
   if (filePath.isEmpty()) {
-    Logger::Tag("MainWindow").d("Import data canceled");
+    Logger::Tag("MainWindow").i("Import data canceled");
     return;
   }
 
@@ -226,7 +226,7 @@ void MainWindow::onActionExportDataClicked() {
   const QString filePath =
       QFileDialog::getSaveFileName(this, "导出数据", "", "配置文件 (*.json)");
   if (filePath.isEmpty()) {
-    Logger::Tag("MainWindow").d("Export data canceled");
+    Logger::Tag("MainWindow").i("Export data canceled");
     return;
   }
   QFile file(filePath);
@@ -308,28 +308,26 @@ void MainWindow::onActionWeWorkSettingClicked() {
   }
 }
 
-// TODO
-// 可能不再需要设置超时时间，应该叫等待时间，通过wss发消息给APP唤起目标应用，等到时间到，通过adb截屏，再通过adb杀掉目标应用
-void MainWindow::onActionOvertimeSettingClicked() {
-  // int defaultValue = 30; // 默认 30 秒
-  // QJsonObject saved = ConfigStore::get().load("overtimeConfig");
-  // if (saved.contains("seconds")) {
-  //   defaultValue = saved["seconds"].toInt();
-  // }
+// 通过wss发消息给APP唤起目标应用，等delay时间到，通过adb截屏，再通过adb杀掉目标应用
+void MainWindow::onActionDelayTimeSettingClicked() {
+  int defaultValue = 30; // 默认 30 秒
+  QJsonObject saved = ConfigStore::get().load("delayTimeConfig");
+  if (saved.contains("seconds")) {
+    defaultValue = saved["seconds"].toInt();
+  }
 
-  // bool ok = false;
-  // const int seconds =
-  //     QInputDialog::getInt(this, "任务超时时间", "请输入任务超时时间（秒）",
-  //                          defaultValue, 10, 120, 1, &ok);
+  bool ok = false;
+  const int seconds =
+      QInputDialog::getInt(this, "任务等待时间", "请输入任务等待时间（秒）",
+                           defaultValue, 10, 120, 1, &ok);
 
-  // if (ok) {
-  //   QJsonObject obj;
-  //   obj["seconds"] = seconds;
-  //   ConfigStore::get().save("overtimeConfig", obj);
-  //   ToastWidget::showInfo(this,
-  //                         QString("任务超时时间已设置为 %1
-  //                         秒").arg(seconds));
-  // }
+  if (ok) {
+    QJsonObject obj;
+    obj["seconds"] = seconds;
+    ConfigStore::get().save("delayTimeConfig", obj);
+    ToastWidget::showInfo(this,
+                          QString("任务等待时间已设置为 %1 秒").arg(seconds));
+  }
 }
 
 void MainWindow::onActionResetTaskSettingClicked() {
@@ -449,17 +447,17 @@ void MainWindow::onActionCaptureScreenClicked() {
 
         QFile file(filePath);
         if (!file.open(QIODevice::WriteOnly)) {
-          MailSender::get()->sendEmail("截屏失败",
-                                       "无法写入截图文件: " + filePath);
-          ToastWidget::showError(this, "无法写入截图文件: " + filePath);
+          const QString err = "无法写入截图文件: " + filePath;
+          MailSender::get()->sendEmail("截屏失败", err);
+          ToastWidget::showError(this, err);
           return;
         }
         file.write(process->readAllStandardOutput());
         file.close();
 
+        const QString filePathStr = filePath.toStdString().c_str();
         Logger::Tag("MainWindow")
-            .iFmt("Screen capture saved to: %s",
-                  filePath.toStdString().c_str());
+            .dFmt("Screen capture saved to: %s", filePathStr);
         // TODO 发送邮件或者企业微信通知用户
       });
   process->start("adb", {"exec-out", "screencap", "-p"});
@@ -500,7 +498,7 @@ void MainWindow::onActionTextWxClicked() {
     ToastWidget::showWarning(this, "请先配置企业微信信息");
     return;
   }
-  WxMessageSender::get()->sendMessage(
+  WxMessageSender::get()->sendMessageAsync(
       "测试企业微信消息",
       "这是一条来自 TaskDispatcher 的企业微信消息，消息发送功能配置成功！");
 }
@@ -541,7 +539,8 @@ void MainWindow::onExecuteTaskButtonClicked() {
     return;
   }
 
-  // TODO 可以执行链式任务了
+  // TODO
+  // 可以执行链式任务了，还需要考虑任务波动时间配置是否开启，以及节假日是否跳过的配置
 }
 
 void MainWindow::onAddTaskButtonClicked() {
@@ -630,6 +629,8 @@ void MainWindow::updateCountDown() {
   const QString formatedTime =
       QTime(0, 0).addSecs(secondsToReset).toString("HH时mm分ss秒");
   ui->countDownLabel->setText(QString("距离重置任务还有 %1").arg(formatedTime));
+
+  // TODO 如果倒计时结束，清楚所有任务状态，并重新开始新的一天任务
 }
 
 MainWindow::~MainWindow() { delete ui; }

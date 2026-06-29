@@ -70,6 +70,13 @@ void MailSender::sendEmail(const QString &subject, const QString &body) {
   timeoutTimerPtr->start(SMTP_TIMEOUT_MS);
 }
 
+void MailSender::sendAttachmentEmail(const QString &subject,
+                                     const QString &body,
+                                     const QString &attachmentPath) {
+  // TODO
+  Logger::Tag("MailSender").w("Attachment email sending not implemented yet");
+}
+
 void MailSender::onConnected() {
   Logger::Tag("MailSender").d("TCP connected, waiting for SSL handshake...");
 }

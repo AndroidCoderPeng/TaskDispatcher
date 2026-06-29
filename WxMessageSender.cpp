@@ -8,6 +8,7 @@
 #include <QNetworkReply>
 #include <QNetworkRequest>
 #include <QUrl>
+#include <QtConcurrent>
 
 WxMessageSender *WxMessageSender::get() {
   static WxMessageSender instance;
@@ -17,6 +18,20 @@ WxMessageSender *WxMessageSender::get() {
 WxMessageSender::WxMessageSender(QObject *parent)
     : QObject(parent), _networkManagerPtr(new QNetworkAccessManager(this)) {}
 
+void WxMessageSender::sendMessageAsync(const QString &title,
+                                       const QString &content) {
+  QtConcurrent::run([this, title, content]() { sendMessage(title, content); });
+}
+
+void WxMessageSender::sendImageMessageAsync(const QString &title,
+                                            const QString &description,
+                                            const QString &imagePath) {
+  QtConcurrent::run([this, title, description, imagePath]() {
+    sendImageMessage(title, description, imagePath);
+  });
+}
+
+// 发送企业微信文字消息
 void WxMessageSender::sendMessage(const QString &title,
                                   const QString &content) {
   QJsonObject cfg = ConfigStore::get().load("wxConfig");
@@ -75,4 +90,12 @@ void WxMessageSender::sendMessage(const QString &title,
 
     Logger::Tag("WxMessageSender").i("Wx message sent successfully");
   });
+}
+
+// 发送企业微信图文消息
+void WxMessageSender::sendImageMessage(const QString &title,
+                                       const QString &description,
+                                       const QString &imagePath) {
+  // TODO
+  Logger::Tag("WxMessageSender").w("sendImageMessage not implemented yet");
 }

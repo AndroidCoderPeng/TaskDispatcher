@@ -288,7 +288,7 @@
                 <addaction name="actionEmailSetting"/>
                 <addaction name="actionWeWorkSetting"/>
                 <addaction name="separator"/>
-                <addaction name="actionTaskOvertimeSetting"/>
+                <addaction name="actionTaskDelayTimeSetting"/>
                 <addaction name="actionResetTaskSetting"/>
                 <addaction name="actionRandomTimeSetting"/>
                 <addaction name="separator"/>
@@ -363,9 +363,9 @@
                 <string>企业微信</string>
             </property>
         </action>
-        <action name="actionTaskOvertimeSetting">
+        <action name="actionTaskDelayTimeSetting">
             <property name="text">
-                <string>任务超时时间(&amp;T)</string>
+                <string>任务等待时间(&amp;T)</string>
             </property>
             <property name="shortcut">
                 <string>Ctrl+T</string>

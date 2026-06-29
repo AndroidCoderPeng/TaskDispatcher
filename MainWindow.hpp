@@ -38,7 +38,7 @@ private:
 
   void onActionEmailSettingClicked();
   void onActionWeWorkSettingClicked();
-  void onActionOvertimeSettingClicked();
+  void onActionDelayTimeSettingClicked();
   void onActionResetTaskSettingClicked();
   void onActionRandomTimeSettingClicked();
   void onActionSkipHolidaySettingToggled(bool checked);
