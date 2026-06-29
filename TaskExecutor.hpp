@@ -1,6 +1,7 @@
 #ifndef TASKEXECUTOR_HPP
 #define TASKEXECUTOR_HPP
 
+#include <QHash>
 #include <QList>
 #include <QObject>
 #include <QTime>
@@ -50,6 +51,12 @@ private slots:
 private:
   /// ==================== 辅助方法 ====================
 
+  // 一次性预计算所有任务的随机偏移（在 start/startNewCycle 时调用）
+  void precomputeRandomOffsets();
+
+  // 获取任务的随机偏移秒数（从缓存读取，保证一致性）
+  int randomOffset(qint32 taskId) const;
+
   // 计算到下一个任务的延迟（毫秒），包含第二层逻辑：随机时间波动
   int calculateDelayToNextMs() const;
 
@@ -77,6 +84,7 @@ private:
   void startNewCycle();
 
   QList<Task> tasks;
+  QHash<qint32, int> mRandomOffsets; // taskId → 随机偏移秒数
   QTimer timer;
   int currentIndex = 0;
   bool running = false;

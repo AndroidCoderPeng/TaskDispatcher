@@ -150,8 +150,16 @@ MainWindow::MainWindow(QWidget *parent)
 
   // 创建任务执行器并连接信号
   taskExecutorPtr = new TaskExecutor(this);
+  connect(taskExecutorPtr, &TaskExecutor::signalTaskExecuted, this,
+          &MainWindow::slotTaskExecuted);
   connect(taskExecutorPtr, &TaskExecutor::signalNextTaskScheduled, this,
           &MainWindow::slotNextTaskScheduled);
+  connect(taskExecutorPtr, &TaskExecutor::signalDayFinished, this,
+          &MainWindow::slotDayFinished);
+  connect(taskExecutorPtr, &TaskExecutor::signalHolidaySkipped, this,
+          &MainWindow::slotHolidaySkipped);
+  connect(taskExecutorPtr, &TaskExecutor::signalCycleReset, this,
+          &MainWindow::slotCycleReset);
 
   // 创建进程执行器并连接信号
   processExecutorPtr = new ProcessExecutor(this);
@@ -526,6 +534,7 @@ void MainWindow::onExecuteTaskButtonClicked() {
   startTaskExecutor();
   ui->executeTaskButton->setText("停止任务");
   ui->addTaskButton->setEnabled(false);
+  ui->listWidget->setEnabled(false);
 }
 
 void MainWindow::onAddTaskButtonClicked() {
@@ -669,6 +678,12 @@ void MainWindow::slotDataReceived(const QString &message) {
   // 响应客户端的消息，处理后续逻辑
   Logger::Tag("MainWindow")
       .dFmt("Received message: %s", message.toStdString().c_str());
+  const auto observer = WebSocketObserver::get();
+  if (!observer->isServerRunning()) {
+    ToastWidget::showWarning(this, "通信服务未开启，请先开启通信服务");
+    return;
+  }
+  observer->sendMessage(WsProtocol::Action::OPEN_APP);
 }
 
 void MainWindow::slotScreenCaptured(const QString &filePath) {
@@ -680,6 +695,13 @@ void MainWindow::slotScreenCaptured(const QString &filePath) {
 void MainWindow::slotCaptureFailed(const QString &message) {
   MailSender::get()->sendEmail("截屏失败", message);
   ToastWidget::showError(this, message);
+}
+
+void MainWindow::slotTaskExecuted(const QDateTime &actualTime, qint32 taskId,
+                                  int current, int total) {
+  Logger::Tag("MainWindow")
+      .dFmt("任务已执行: %d/%d (ID=%d), 实际时间=%s", current, total, taskId,
+            actualTime.toString("HH:mm:ss").toStdString().c_str());
 }
 
 void MainWindow::slotNextTaskScheduled(int nextIndex,
@@ -696,6 +718,40 @@ void MainWindow::slotNextTaskScheduled(int nextIndex,
     if (widget && widget->taskId() == nextTaskId) {
       widget->setActualTime(predictedTime.time());
       break;
+    }
+  }
+}
+
+void MainWindow::slotDayFinished() {
+  Logger::Tag("MainWindow").i("当天所有任务执行完毕，重置任务列表实际时间");
+  for (int i = 0; i < ui->listWidget->count(); ++i) {
+    auto *widget = dynamic_cast<TaskItemWidget *>(
+        ui->listWidget->itemWidget(ui->listWidget->item(i)));
+    if (widget) {
+      widget->setActualTime(QTime());
+    }
+  }
+}
+
+void MainWindow::slotHolidaySkipped() {
+  Logger::Tag("MainWindow").i("节假日，跳过今日所有任务");
+  for (int i = 0; i < ui->listWidget->count(); ++i) {
+    auto *widget = dynamic_cast<TaskItemWidget *>(
+        ui->listWidget->itemWidget(ui->listWidget->item(i)));
+    if (widget) {
+      widget->setActualTime(QTime());
+    }
+  }
+}
+
+void MainWindow::slotCycleReset() {
+  Logger::Tag("MainWindow").i("新一天周期开始");
+  // 清空上一轮的实际时间，等待新一轮的信号更新
+  for (int i = 0; i < ui->listWidget->count(); ++i) {
+    auto *widget = dynamic_cast<TaskItemWidget *>(
+        ui->listWidget->itemWidget(ui->listWidget->item(i)));
+    if (widget) {
+      widget->setActualTime(QTime());
     }
   }
 }
@@ -798,6 +854,7 @@ void MainWindow::stopTask() {
   taskExecutorPtr->stop();
   ui->executeTaskButton->setText("执行任务");
   ui->addTaskButton->setEnabled(true);
+  ui->listWidget->setEnabled(true);
   ui->taskIndexLabel->setText("0");
 
   // 清空所有任务的实际执行时间

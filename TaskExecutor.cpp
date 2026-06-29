@@ -35,6 +35,25 @@ void TaskExecutor::clearTasks() {
 }
 
 /// ==================== 私有辅助方法 ====================
+
+void TaskExecutor::precomputeRandomOffsets() {
+  mRandomOffsets.clear();
+  if (!randomEnabled || randomMaxMinutes <= 0) {
+    return;
+  }
+  for (const Task &task : tasks) {
+    const int offset =
+        QRandomGenerator::global()->bounded(randomMaxMinutes * 60);
+    mRandomOffsets.insert(task.id, offset);
+  }
+  Logger::Tag("TaskExecutor")
+      .dFmt("已为 %d 个任务预计算随机偏移", mRandomOffsets.size());
+}
+
+int TaskExecutor::randomOffset(qint32 taskId) const {
+  return mRandomOffsets.value(taskId, 0);
+}
+
 int TaskExecutor::calculateDelayToNextMs() const {
   if (currentIndex >= tasks.size()) {
     return 0;
@@ -43,16 +62,13 @@ int TaskExecutor::calculateDelayToNextMs() const {
   const QTime now = QTime::currentTime();
   const int nowSeconds = now.hour() * 3600 + now.minute() * 60 + now.second();
 
-  const QTime scheduled = tasks.at(currentIndex).scheduledTime.time();
+  const Task &task = tasks.at(currentIndex);
+  const QTime scheduled = task.scheduledTime.time();
   int targetSeconds =
       scheduled.hour() * 3600 + scheduled.minute() * 60 + scheduled.second();
 
-  // 第二层：添加随机时间波动
-  if (randomEnabled && randomMaxMinutes > 0) {
-    const int randomOffsetSeconds =
-        QRandomGenerator::global()->bounded(randomMaxMinutes * 60);
-    targetSeconds += randomOffsetSeconds;
-  }
+  // 第二层：添加随机时间波动（从缓存读取，保证一致性）
+  targetSeconds += randomOffset(task.id);
 
   const int delaySeconds = targetSeconds - nowSeconds;
   return delaySeconds > 0 ? delaySeconds * 1000 : 0;
@@ -140,6 +156,9 @@ void TaskExecutor::start() {
     return a.scheduledTime < b.scheduledTime;
   });
 
+  // 一次性预计算所有任务的随机偏移
+  precomputeRandomOffsets();
+
   running = true;
 
   // 跳过当前时间已过的任务
@@ -191,13 +210,9 @@ void TaskExecutor::executeNextTask() {
   // 获取当前任务
   const Task currentTask = tasks.at(currentIndex);
 
-  // 计算实际执行时间（计划时间 + 随机偏移）
+  // 计算实际执行时间（计划时间 + 随机偏移，从缓存读取保证一致性）
   QDateTime actualTime = currentTask.scheduledTime;
-  if (randomEnabled && randomMaxMinutes > 0) {
-    const int randomOffsetSeconds =
-        QRandomGenerator::global()->bounded(randomMaxMinutes * 60);
-    actualTime = actualTime.addSecs(randomOffsetSeconds);
-  }
+  actualTime = actualTime.addSecs(randomOffset(currentTask.id));
 
   const int totalTasks = tasks.size();
   const qint32 taskId = currentTask.id;
@@ -244,6 +259,7 @@ void TaskExecutor::startNewCycle() {
   }
 
   reloadTasks();
+  precomputeRandomOffsets();
   emit signalCycleReset();
 
   if (tasks.isEmpty()) {
@@ -276,13 +292,9 @@ void TaskExecutor::emitNextTaskInfo() {
   }
   const Task &task = tasks.at(currentIndex);
 
-  // 计算预计执行时间（含随机偏移）
+  // 计算预计执行时间（含随机偏移，从缓存读取保证一致性）
   QDateTime predicted = task.scheduledTime;
-  if (randomEnabled && randomMaxMinutes > 0) {
-    const int randomOffsetSeconds =
-        QRandomGenerator::global()->bounded(randomMaxMinutes * 60);
-    predicted = predicted.addSecs(randomOffsetSeconds);
-  }
+  predicted = predicted.addSecs(randomOffset(task.id));
 
   emit signalNextTaskScheduled(currentIndex + 1, predicted, task.id);
 }

@@ -34,8 +34,17 @@ public slots:
 
   void slotCaptureFailed(const QString &message);
 
+  void slotTaskExecuted(const QDateTime &actualTime, qint32 taskId, int current,
+                        int total);
+
   void slotNextTaskScheduled(int nextIndex, const QDateTime &predictedTime,
                              qint32 nextTaskId);
+
+  void slotDayFinished();
+
+  void slotHolidaySkipped();
+
+  void slotCycleReset();
 
 private:
   Ui::MainWindow *ui;
