@@ -4,6 +4,7 @@
 #include <QMainWindow>
 
 #include "GlobalDefinition.hpp"
+#include "ProcessExecutor.hpp"
 #include "TaskExecutor.hpp"
 
 QT_BEGIN_NAMESPACE
@@ -28,23 +29,15 @@ public slots:
 
   void slotDataReceived(const QString &message);
 
-private slots:
-  void onTaskExecuted(const QDateTime &actualTime, qint32 taskId, int current,
-                      int total);
+  void slotScreenCaptured(const QString &filePath);
 
-  void onNextTaskScheduled(int nextIndex, const QDateTime &predictedTime,
-                           qint32 nextTaskId);
-
-  void onDayFinished();
-
-  void onHolidaySkipped();
-
-  void onCycleReset();
+  void slotCaptureFailed(const QString &message);
 
 private:
   Ui::MainWindow *ui;
   QString targetPackage = "com.alibaba.android.rimet";
-  TaskExecutor *executorPtr = nullptr;
+  TaskExecutor *taskExecutorPtr = nullptr;
+  ProcessExecutor *processExecutorPtr = nullptr;
 
   // ====== 菜单栏 ======
   void onActionImportDataClicked();
@@ -81,12 +74,12 @@ private:
 
   void updateCountDown();
 
+  void resetTaskState();
+
   void updateTaskListWidget();
 
   void captureScreen();
 
   void killTargetApp();
-
-  void updateExecuteButtonStyle(bool running);
 };
 #endif // MAINWINDOW_HPP

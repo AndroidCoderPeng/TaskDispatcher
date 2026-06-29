@@ -7,6 +7,7 @@
 #include "EmailSettingDialog.hpp"
 #include "Logger.hpp"
 #include "MailSender.hpp"
+#include "ProcessExecutor.hpp"
 #include "ResetTaskSettingDialog.hpp"
 #include "TaskItemWidget.hpp"
 #include "TaskStore.hpp"
@@ -144,19 +145,25 @@ MainWindow::MainWindow(QWidget *parent)
           });
 
   // 创建任务执行器并连接信号
-  executorPtr = new TaskExecutor(this);
-  connect(executorPtr, &TaskExecutor::signalTaskExecuted, this,
-          &MainWindow::onTaskExecuted);
-  connect(executorPtr, &TaskExecutor::signalNextTaskScheduled, this,
-          &MainWindow::onNextTaskScheduled);
-  connect(executorPtr, &TaskExecutor::signalDayFinished, this,
-          &MainWindow::onDayFinished);
-  connect(executorPtr, &TaskExecutor::signalHolidaySkipped, this,
-          &MainWindow::onHolidaySkipped);
-  connect(executorPtr, &TaskExecutor::signalCycleReset, this,
-          &MainWindow::onCycleReset);
+  taskExecutorPtr = new TaskExecutor(this);
+
+  // 创建进程执行器并连接信号
+  processExecutorPtr = new ProcessExecutor(this);
+  connect(processExecutorPtr, &ProcessExecutor::signalScreenCaptured, this,
+          &MainWindow::slotScreenCaptured);
+  connect(processExecutorPtr, &ProcessExecutor::signalCaptureFailed, this,
+          &MainWindow::slotCaptureFailed);
 }
 
+/// —————————— 外部调用函数 ——————————
+void MainWindow::bindIpAddresses(const QList<QString> &ips) {
+  ui->ipv4Box->clear();
+  for (const QString &ip : ips) {
+    ui->ipv4Box->addItem(ip);
+  }
+}
+
+/// —————————— 内部私有函数 ——————————
 void MainWindow::onActionImportDataClicked() {
   const QString filePath =
       QFileDialog::getOpenFileName(this, "导入数据", "", "配置文件 (*.json)");
@@ -478,20 +485,11 @@ void MainWindow::onActionAboutTriggered() {
                      "平台。Mac平台需自行下载Qt编译链编译</p>");
 }
 
-void MainWindow::bindIpAddresses(const QList<QString> &ips) {
-  ui->ipv4Box->clear();
-  for (const QString &ip : ips) {
-    ui->ipv4Box->addItem(ip);
-  }
-}
-
 void MainWindow::onExecuteTaskButtonClicked() {
   // 如果正在运行，则停止
-  if (executorPtr->isRunning()) {
-    executorPtr->stop();
-    updateExecuteButtonStyle(false);
-
-    // 重置进度显示
+  if (taskExecutorPtr->isRunning()) {
+    taskExecutorPtr->stop();
+    ui->executeTaskButton->setText("执行任务");
     ui->taskIndexLabel->setText("0");
 
     // 清空所有任务的实际执行时间
@@ -554,13 +552,13 @@ void MainWindow::onExecuteTaskButtonClicked() {
   }
 
   // 配置并启动——后续时间判定、随机偏移、节假日检查、循环重置全由执行器内部完成
-  executorPtr->setSkipHoliday(skipHoliday);
-  executorPtr->setRandomTimeConfig(randomEnabled, randomMinutes);
-  executorPtr->setResetTime(resetTime);
-  executorPtr->start();
+  taskExecutorPtr->setSkipHoliday(skipHoliday);
+  taskExecutorPtr->setRandomTimeConfig(randomEnabled, randomMinutes);
+  taskExecutorPtr->setResetTime(resetTime);
+  taskExecutorPtr->start();
 
   // 按钮变为运行状态
-  updateExecuteButtonStyle(true);
+  ui->executeTaskButton->setText("停止任务");
 
   Logger::Tag("MainWindow")
       .dFmt("链式任务已启动，共 %d 个任务，随机=%s，跳过节假日=%s",
@@ -597,61 +595,10 @@ void MainWindow::updateTaskListWidget() {
   }
 }
 
-void MainWindow::captureScreen() {
-  const QString captureDir =
-      QCoreApplication::applicationDirPath() + "/capture";
-  QDir dir(captureDir);
-  if (!dir.exists()) {
-    dir.mkpath(".");
-  }
-
-  const QString fileName =
-      QDateTime::currentDateTime().toString("yyyyMMdd_HHmmss") + ".png";
-  const QString filePath = captureDir + "/" + fileName;
-
-  QProcess *process = new QProcess(this);
-  connect(
-      process, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
-      this, [this, process, filePath](int exitCode, QProcess::ExitStatus) {
-        process->deleteLater();
-
-        if (exitCode != 0) {
-          const QString err = process->readAllStandardError().trimmed();
-          QString tip;
-          if (err.contains("no devices")) {
-            tip = "未检测到已连接的 Android 设备，请检查 USB 连接或 adb 状态";
-          } else if (err.contains("more than one device")) {
-            tip = "检测到多个设备连接，请仅保留一台设备";
-          } else {
-            tip = err;
-          }
-          MailSender::get()->sendEmail("截屏失败", tip);
-          ToastWidget::showError(this, tip);
-          return;
-        }
-
-        QFile file(filePath);
-        if (!file.open(QIODevice::WriteOnly)) {
-          const QString err = "无法写入截图文件: " + filePath;
-          MailSender::get()->sendEmail("截屏失败", err);
-          ToastWidget::showError(this, err);
-          return;
-        }
-        file.write(process->readAllStandardOutput());
-        file.close();
-
-        Logger::Tag("MainWindow")
-            .dFmt("截屏已保存: %s", filePath.toStdString().c_str());
-      });
-  process->start("adb", {"exec-out", "screencap", "-p"});
-}
+void MainWindow::captureScreen() { processExecutorPtr->captureScreen(); }
 
 void MainWindow::killTargetApp() {
-  QProcess *process = new QProcess(this);
-  connect(process,
-          QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
-          process, &QProcess::deleteLater);
-  process->start("adb", {"shell", "am", "force-stop", targetPackage});
+  processExecutorPtr->killTargetApp(targetPackage);
 }
 
 void MainWindow::onOpenSocketButtonClicked() {
@@ -663,14 +610,6 @@ void MainWindow::onOpenSocketButtonClicked() {
     }
   } else {
     WebSocketObserver::get()->startServer(ui->ipv4Box->currentText());
-  }
-}
-
-void MainWindow::updateExecuteButtonStyle(bool running) {
-  if (running) {
-    ui->executeTaskButton->setText("停止任务");
-  } else {
-    ui->executeTaskButton->setText("执行任务");
   }
 }
 
@@ -703,6 +642,17 @@ void MainWindow::slotDataReceived(const QString &message) {
       .dFmt("Received message: %s", message.toStdString().c_str());
 }
 
+void MainWindow::slotScreenCaptured(const QString &filePath) {
+  Logger::Tag("MainWindow")
+      .dFmt("截屏已保存: %s", filePath.toStdString().c_str());
+  ToastWidget::showInfo(this, "截屏已保存: " + filePath);
+}
+
+void MainWindow::slotCaptureFailed(const QString &message) {
+  MailSender::get()->sendEmail("截屏失败", message);
+  ToastWidget::showError(this, message);
+}
+
 void MainWindow::updateCountDown() {
   QJsonObject resetTaskConfig = ConfigStore::get().load("resetTaskConfig");
   // 未设置则默认 0 点
@@ -720,111 +670,65 @@ void MainWindow::updateCountDown() {
       QTime(0, 0).addSecs(secondsToReset).toString("HH时mm分ss秒");
   ui->countDownLabel->setText(QString("距离重置任务还有 %1").arg(formatedTime));
 
-  // TODO 如果倒计时结束，清楚所有任务状态，并重新开始新的一天任务
-}
-
-void MainWindow::onTaskExecuted(const QDateTime &actualTime, qint32 taskId,
-                                int current, int total) {
-  Logger::Tag("MainWindow")
-      .dFmt("执行任务 #%d: %s (%d/%d)", taskId,
-            actualTime.toString("HH:mm:ss").toStdString().c_str(), current,
-            total);
-
-  // 更新刚执行完的任务的实际执行时间
-  for (int i = 0; i < ui->listWidget->count(); ++i) {
-    QListWidgetItem *item = ui->listWidget->item(i);
-    auto *widget =
-        dynamic_cast<TaskItemWidget *>(ui->listWidget->itemWidget(item));
-    if (widget && widget->taskId() == taskId) {
-      widget->setActualTime(actualTime.time());
-      break;
-    }
-  }
-
-  const auto observer = WebSocketObserver::get();
-  if (observer->isServerRunning()) {
-    observer->sendMessage(WsProtocol::Action::OPEN_APP);
-  }
-
-  // 读取任务等待时间（秒）
-  int delaySeconds = 30;
-  {
-    const QJsonObject cfg = ConfigStore::get().load("delayTimeConfig");
-    if (cfg.contains("seconds")) {
-      delaySeconds = cfg["seconds"].toInt();
-    }
-  }
-
-  // 延时后截屏，隔 5 秒再杀进程
-  QTimer::singleShot(delaySeconds * 1000, this, [this]() {
-    if (!executorPtr->isRunning()) {
-      return;
-    }
-    captureScreen();
-
-    // 截图后再延时 5 秒杀掉目标应用，给截图足够时间完成写入
-    QTimer::singleShot(5000, this, [this]() {
-      if (!executorPtr->isRunning()) {
-        return;
-      }
-      killTargetApp();
-    });
-  });
-}
-
-void MainWindow::onNextTaskScheduled(int nextIndex,
-                                     const QDateTime &predictedTime,
-                                     qint32 nextTaskId) {
-  Logger::Tag("MainWindow")
-      .dFmt("下一任务 #%d: %s (第 %d 个)", nextTaskId,
-            predictedTime.toString("HH:mm:ss").toStdString().c_str(),
-            nextIndex);
-
-  // 更新进度显示为下一个待执行任务的索引
-  ui->taskIndexLabel->setText(QString::number(nextIndex));
-
-  // 在任务列表中预显示下一个任务的预测执行时间
-  for (int i = 0; i < ui->listWidget->count(); ++i) {
-    QListWidgetItem *item = ui->listWidget->item(i);
-    auto *widget =
-        dynamic_cast<TaskItemWidget *>(ui->listWidget->itemWidget(item));
-    if (widget && widget->taskId() == nextTaskId) {
-      widget->setActualTime(predictedTime.time());
-      break;
-    }
+  // 如果倒计时结束，清除所有任务状态，并重新开始新的一天任务
+  if (secondsToReset == 0) {
+    resetTaskState();
   }
 }
 
-void MainWindow::onDayFinished() {
-  Logger::Tag("MainWindow").d("当日所有任务执行完毕，等待重置点");
-}
+void MainWindow::resetTaskState() {
+  Logger::Tag("MainWindow").d("开始重置任务状态...");
 
-void MainWindow::onHolidaySkipped() {
-  Logger::Tag("MainWindow").d("节假日检测：今日任务已跳过，等待重置点");
-  ToastWidget::showInfo(this, "当前为法定节假日，今日任务已跳过");
-}
-
-void MainWindow::onCycleReset() {
-  Logger::Tag("MainWindow").d("任务已重置，开始新一轮调度");
-
-  // 重置进度显示
-  ui->taskIndexLabel->setText("0");
-
-  // 刷新任务总数
-  const int taskCount = TaskStore::get().loadAll().size();
-  ui->taskCountLabel->setText(QString::number(taskCount));
-
-  // 清空所有任务的实际执行时间
-  for (int i = 0; i < ui->listWidget->count(); ++i) {
-    QListWidgetItem *item = ui->listWidget->item(i);
-    auto *widget =
-        dynamic_cast<TaskItemWidget *>(ui->listWidget->itemWidget(item));
-    if (widget) {
-      widget->setActualTime(QTime()); // 传入无效时间表示清空
-    }
+  // 1. 停止当前执行器
+  if (taskExecutorPtr && taskExecutorPtr->isRunning()) {
+    taskExecutorPtr->stop();
+    Logger::Tag("MainWindow").d("已停止任务执行器");
   }
 
-  ToastWidget::showInfo(this, "新一天任务周期已开始");
+  // 2. 清除数据库中所有任务的状态（将所有任务状态重置为 Pending）
+  QList<Task> allTasks = TaskStore::get().loadAll();
+  int resetCount = 0;
+  for (auto &task : allTasks) {
+    if (task.status != TaskStatus::Pending) {
+      task.status = TaskStatus::Pending;
+      TaskStore::get().update(task);
+      resetCount++;
+    }
+  }
+  Logger::Tag("MainWindow").dFmt("已重置 %d 个任务的状态", resetCount);
+
+  // 3. 更新UI显示
+  updateTaskListWidget();
+  ui->taskCountLabel->setText(QString::number(allTasks.size()));
+
+  // 4. 重新启动任务执行器，开始新的一天任务
+  if (taskExecutorPtr) {
+    // 重新加载配置
+    QJsonObject resetTaskConfig = ConfigStore::get().load("resetTaskConfig");
+    const QString resetTimeStr = resetTaskConfig.contains("time")
+                                     ? resetTaskConfig["time"].toString()
+                                     : QString("00:00:00");
+    const QTime resetTime = QTime::fromString(resetTimeStr, "HH:mm:ss");
+
+    QJsonObject randomTimeConfig = ConfigStore::get().load("randomTimeConfig");
+    bool randomEnabled = randomTimeConfig.contains("enabled")
+                             ? randomTimeConfig["enabled"].toBool()
+                             : false;
+    int randomMinutes = randomTimeConfig.contains("maxMinutes")
+                            ? randomTimeConfig["maxMinutes"].toInt()
+                            : 5;
+
+    bool skipHoliday =
+        ConfigStore::get().load("skipHolidayConfig").value("enabled").toBool();
+
+    taskExecutorPtr->setSkipHoliday(skipHoliday);
+    taskExecutorPtr->setRandomTimeConfig(randomEnabled, randomMinutes);
+    taskExecutorPtr->setResetTime(resetTime);
+    taskExecutorPtr->start();
+
+    Logger::Tag("MainWindow").d("任务执行器已重新启动，开始新的一天任务");
+    ToastWidget::showInfo(this, "任务状态已重置，新的一天任务已开始");
+  }
 }
 
 MainWindow::~MainWindow() { delete ui; }

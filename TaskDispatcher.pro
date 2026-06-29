@@ -20,6 +20,7 @@ SOURCES += \
     Logger.cpp \
     DispatcherApplication.cpp \
     MailSender.cpp \
+    ProcessExecutor.cpp \
     ResetTaskSettingDialog.cpp \
     TaskExecutor.cpp \
     TaskItemWidget.cpp \
@@ -41,6 +42,7 @@ HEADERS += \
     DispatcherApplication.hpp \
     MailSender.hpp \
     MainWindow.hpp \
+    ProcessExecutor.hpp \
     ResetTaskSettingDialog.hpp \
     TaskExecutor.hpp \
     TaskItemWidget.hpp \
