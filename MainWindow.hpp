@@ -1,6 +1,7 @@
 #ifndef MAINWINDOW_HPP
 #define MAINWINDOW_HPP
 
+#include <QListWidget>
 #include <QMainWindow>
 
 #include "GlobalDefinition.hpp"
@@ -71,6 +72,10 @@ private:
   void onOpenSocketButtonClicked();
 
   void onNotifyMethodChanged();
+
+  void showListWidgetContextMenu(const QPoint &pos);
+
+  void onCustomAction(const QListWidgetItem *item, const QString &message);
 
   void updateCountDown();
 

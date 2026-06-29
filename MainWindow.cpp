@@ -134,6 +134,10 @@ MainWindow::MainWindow(QWidget *parent)
   connect(ui->wxRadioButton, &QRadioButton::toggled, this,
           &MainWindow::onNotifyMethodChanged);
 
+  // 连接任务列表右键菜单信号
+  connect(ui->listWidget, &QListWidget::customContextMenuRequested, this,
+          &MainWindow::showListWidgetContextMenu);
+
   // 连接节假日数据同步信号
   const auto holidayManager = ChinaHolidayManager::get();
   connect(
@@ -502,7 +506,7 @@ void MainWindow::onExecuteTaskButtonClicked() {
       }
     }
 
-    Logger::Tag("MainWindow").d("用户手动停止任务调度");
+    Logger::Tag("MainWindow").i("用户手动停止任务调度");
     return;
   }
 
@@ -582,6 +586,55 @@ void MainWindow::onNotifyMethodChanged() {
   ConfigStore::get().save("notifyMethodConfig", obj);
 }
 
+void MainWindow::showListWidgetContextMenu(const QPoint &pos) {
+  const auto listWidget = qobject_cast<QListWidget *>(sender());
+  if (listWidget) {
+    const QListWidgetItem *item = listWidget->itemAt(pos);
+    if (item == nullptr) {
+      return;
+    }
+
+    QMenu menu(this);
+    const QAction *editAction = menu.addAction("编辑");
+    const QAction *deleteAction = menu.addAction("删除");
+    const QAction *selectedAction =
+        menu.exec(listWidget->viewport()->mapToGlobal(pos));
+    if (selectedAction == editAction) {
+      onCustomAction(item, "0");
+    } else if (selectedAction == deleteAction) {
+      onCustomAction(item, "1");
+    } else {
+      Logger::Tag("MainWindow").w("No action selected in context menu");
+    }
+  }
+}
+
+void MainWindow::onCustomAction(const QListWidgetItem *item,
+                                const QString &message) {
+  auto *listItem = const_cast<QListWidgetItem *>(item);
+  auto *itemWidget =
+      qobject_cast<TaskItemWidget *>(ui->listWidget->itemWidget(listItem));
+  if (!itemWidget) {
+    return;
+  }
+
+  const int id = item->data(Qt::UserRole).toInt();
+  if (message == "0") {
+    // 编辑
+  } else if (message == "1") {
+    // 删除
+    if (QMessageBox::question(this, "确认", "确定要删除该任务吗？",
+                              QMessageBox::Yes | QMessageBox::No) ==
+        QMessageBox::Yes) {
+      TaskStore::get().remove(id);
+      updateTaskListWidget();
+    }
+  } else {
+    Logger::Tag("MainWindow")
+        .dFmt("Unknown action message: %s", message.toStdString().c_str());
+  }
+}
+
 void MainWindow::slotNoClient() {
   ToastWidget::showWarning(this, "没有客户端连接到通信服务");
 }
@@ -639,12 +692,12 @@ void MainWindow::updateCountDown() {
 }
 
 void MainWindow::resetTaskState() {
-  Logger::Tag("MainWindow").d("开始重置任务状态...");
+  Logger::Tag("MainWindow").i("开始重置任务状态...");
 
   // 1. 停止当前执行器
   if (taskExecutorPtr && taskExecutorPtr->isRunning()) {
     taskExecutorPtr->stop();
-    Logger::Tag("MainWindow").d("已停止任务执行器");
+    Logger::Tag("MainWindow").i("已停止任务执行器");
   }
 
   // 2. 获取任务列表并更新UI显示
@@ -655,7 +708,7 @@ void MainWindow::resetTaskState() {
   // 4. 重新启动任务执行器，开始新的一天任务
   if (taskExecutorPtr) {
     startTaskExecutor();
-    Logger::Tag("MainWindow").d("任务执行器已重新启动，开始新的一天任务");
+    Logger::Tag("MainWindow").i("任务执行器已重新启动，开始新的一天任务");
     ToastWidget::showInfo(this, "任务状态已重置，新的一天任务已开始");
   }
 }
