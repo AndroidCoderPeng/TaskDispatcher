@@ -232,8 +232,9 @@ QPushButton:pressed {
         background:qlineargradient(x1:0,y1:0,x2:0,y2:1,stop:0 #0060DB,stop:1 #004AAD);
 }
 QPushButton:disabled {
-        background:qlineargradient(x1:0,y1:0,x2:0,y2:1,stop:0 #505068,stop:1 #44445A);
-        color:#909090;
+        background:#505050;
+	color:#909090;
+	border:1px solid #909090;
 }
 /* 取消按钮 */
 QPushButton#cancelButton {

@@ -645,10 +645,12 @@ void MainWindow::slotServerStateChanged(const WebSocketState &state) {
     ui->socketIconView->setPixmap(QPixmap(":/socket_listening.png"));
     ui->socketStateView->setText("通信服务已开启");
     ui->openSocketButton->setText("关闭通信服务");
+    ui->ipv4Box->setEnabled(false);
   } else {
     ui->socketIconView->setPixmap(QPixmap(":/socket_shutdown.png"));
     ui->socketStateView->setText("通信服务已关闭");
     ui->openSocketButton->setText("开启通信服务");
+    ui->ipv4Box->setEnabled(true);
   }
 }
 
