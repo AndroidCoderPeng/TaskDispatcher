@@ -492,20 +492,7 @@ void MainWindow::onActionAboutTriggered() {
 void MainWindow::onExecuteTaskButtonClicked() {
   // 如果正在运行，则停止
   if (taskExecutorPtr->isRunning()) {
-    taskExecutorPtr->stop();
-    ui->executeTaskButton->setText("执行任务");
-    ui->taskIndexLabel->setText("0");
-
-    // 清空所有任务的实际执行时间
-    for (int i = 0; i < ui->listWidget->count(); ++i) {
-      QListWidgetItem *item = ui->listWidget->item(i);
-      auto *widget =
-          dynamic_cast<TaskItemWidget *>(ui->listWidget->itemWidget(item));
-      if (widget) {
-        widget->setActualTime(QTime());
-      }
-    }
-
+    stopTask();
     Logger::Tag("MainWindow").i("用户手动停止任务调度");
     return;
   }
@@ -525,10 +512,7 @@ void MainWindow::onExecuteTaskButtonClicked() {
 
   // 加载配置并启动任务执行器
   startTaskExecutor();
-
-  // 按钮变为运行状态
   ui->executeTaskButton->setText("停止任务");
-
   Logger::Tag("MainWindow").dFmt("链式任务已启动，共 %d 个任务", tasks.size());
 }
 
@@ -573,6 +557,8 @@ void MainWindow::onOpenSocketButtonClicked() {
                               QMessageBox::Yes | QMessageBox::No) ==
         QMessageBox::Yes) {
       WebSocketObserver::get()->stopServer();
+      // 任务也需要一起关闭
+      stopTask();
     }
   } else {
     WebSocketObserver::get()->startServer(ui->ipv4Box->currentText());
@@ -621,6 +607,19 @@ void MainWindow::onCustomAction(const QListWidgetItem *item,
   const int id = item->data(Qt::UserRole).toInt();
   if (message == "0") {
     // 编辑
+    const Task task = TaskStore::get().loadById(id);
+    if (task.id <= 0) {
+      return;
+    }
+    AddTaskDialog dialog(this);
+    dialog.setTask(task);
+    if (dialog.exec() == QDialog::Accepted) {
+      const auto result = dialog.getInputValue();
+      if (result.first) {
+        TaskStore::get().update(result.second);
+        updateTaskListWidget();
+      }
+    }
   } else if (message == "1") {
     // 删除
     if (QMessageBox::question(this, "确认", "确定要删除该任务吗？",
@@ -760,6 +759,22 @@ void MainWindow::startTaskExecutor() {
             randomEnabled ? "是" : "否", randomMinutes,
             skipHoliday ? "是" : "否",
             resetTime.toString("HH:mm").toStdString().c_str());
+}
+
+void MainWindow::stopTask() {
+  taskExecutorPtr->stop();
+  ui->executeTaskButton->setText("执行任务");
+  ui->taskIndexLabel->setText("0");
+
+  // 清空所有任务的实际执行时间
+  for (int i = 0; i < ui->listWidget->count(); ++i) {
+    QListWidgetItem *item = ui->listWidget->item(i);
+    auto *widget =
+        dynamic_cast<TaskItemWidget *>(ui->listWidget->itemWidget(item));
+    if (widget) {
+      widget->setActualTime(QTime());
+    }
+  }
 }
 
 MainWindow::~MainWindow() { delete ui; }

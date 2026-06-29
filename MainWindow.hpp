@@ -83,6 +83,8 @@ private:
 
   void startTaskExecutor();
 
+  void stopTask();
+
   void updateTaskListWidget();
 
   void captureScreen();

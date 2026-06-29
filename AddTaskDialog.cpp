@@ -14,6 +14,12 @@ AddTaskDialog::AddTaskDialog(QWidget *parent)
           &AddTaskDialog::onCancelButtonClicked);
 }
 
+void AddTaskDialog::setTask(const Task &task) {
+  this->task = task;
+  ui->timeEdit->setTime(task.scheduledTime.time());
+  setWindowTitle("编辑任务");
+}
+
 void AddTaskDialog::onSaveButtonClicked() {
   const QTime time = ui->timeEdit->time();
   task.scheduledTime = QDateTime(QDate::currentDate(), time);

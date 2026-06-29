@@ -16,6 +16,8 @@ public:
   explicit AddTaskDialog(QWidget *parent = nullptr);
   ~AddTaskDialog();
 
+  void setTask(const Task &task);
+
   void onSaveButtonClicked();
 
   void onCancelButtonClicked();
