@@ -422,59 +422,7 @@ void MainWindow::onActionSyncDataClicked() {
   ChinaHolidayManager::get()->updateChinaHolidayData();
 }
 
-void MainWindow::onActionCaptureScreenClicked() {
-  // 确保 capture 目录存在
-  const QString captureDir =
-      QCoreApplication::applicationDirPath() + "/capture";
-  QDir dir(captureDir);
-  if (!dir.exists()) {
-    dir.mkpath(".");
-  }
-
-  // 生成带时间戳的文件名
-  const QString fileName =
-      QDateTime::currentDateTime().toString("yyyyMMdd_HHmmss") + ".png";
-  const QString filePath = captureDir + "/" + fileName;
-
-  // 通过 adb 截图并直接导出到本地文件
-  QProcess *process = new QProcess(this);
-  connect(
-      process, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
-      this, [this, process, filePath](int exitCode, QProcess::ExitStatus) {
-        process->deleteLater();
-
-        if (exitCode != 0) {
-          const QString err = process->readAllStandardError().trimmed();
-          QString tip;
-          if (err.contains("no devices")) {
-            tip = "未检测到已连接的 Android 设备，请检查 USB 连接或 adb 状态";
-          } else if (err.contains("more than one device")) {
-            tip = "检测到多个设备连接，请仅保留一台设备";
-          } else {
-            tip = err;
-          }
-          MailSender::get()->sendEmail("截屏失败", tip.toStdString().c_str());
-          ToastWidget::showError(this, tip);
-          return;
-        }
-
-        QFile file(filePath);
-        if (!file.open(QIODevice::WriteOnly)) {
-          const QString err = "无法写入截图文件: " + filePath;
-          MailSender::get()->sendEmail("截屏失败", err);
-          ToastWidget::showError(this, err);
-          return;
-        }
-        file.write(process->readAllStandardOutput());
-        file.close();
-
-        const QString filePathStr = filePath.toStdString().c_str();
-        Logger::Tag("MainWindow")
-            .dFmt("Screen capture saved to: %s", filePathStr);
-        // TODO 发送邮件或者企业微信通知用户
-      });
-  process->start("adb", {"exec-out", "screencap", "-p"});
-}
+void MainWindow::onActionCaptureScreenClicked() { captureScreen(true); }
 
 void MainWindow::onActionOpenTargetAppClicked() {
   // 发送 websocket 消息给客户端，通知客户端打开目标应用
@@ -486,13 +434,7 @@ void MainWindow::onActionOpenTargetAppClicked() {
   observer->sendMessage(WsProtocol::Action::OPEN_APP);
 }
 
-void MainWindow::onActionKillTargetAppClicked() {
-  QProcess *process = new QProcess(this);
-  connect(process,
-          QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
-          process, &QProcess::deleteLater);
-  process->start("adb", {"shell", "am", "force-stop", targetPackage});
-}
+void MainWindow::onActionKillTargetAppClicked() { killTargetApp(); }
 
 void MainWindow::onActionTestEmailClicked() {
   QJsonObject obj = ConfigStore::get().load("emailConfig");
@@ -633,6 +575,75 @@ void MainWindow::updateTaskListWidget() {
   }
 }
 
+void MainWindow::captureScreen() {
+  const QString captureDir =
+      QCoreApplication::applicationDirPath() + "/capture";
+  QDir dir(captureDir);
+  if (!dir.exists()) {
+    dir.mkpath(".");
+  }
+
+  const QString fileName =
+      QDateTime::currentDateTime().toString("yyyyMMdd_HHmmss") + ".png";
+  const QString filePath = captureDir + "/" + fileName;
+
+  QProcess *process = new QProcess(this);
+  connect(process,
+          QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished), this,
+          [this, process, filePath, showAlerts](int exitCode,
+                                                QProcess::ExitStatus) {
+            process->deleteLater();
+
+            if (exitCode != 0) {
+              const QString err = process->readAllStandardError().trimmed();
+              QString tip;
+              if (err.contains("no devices")) {
+                tip =
+                    "未检测到已连接的 Android 设备，请检查 USB 连接或 adb 状态";
+              } else if (err.contains("more than one device")) {
+                tip = "检测到多个设备连接，请仅保留一台设备";
+              } else {
+                tip = err;
+              }
+              if (showAlerts) {
+                MailSender::get()->sendEmail("截屏失败", tip);
+                ToastWidget::showError(this, tip);
+              } else {
+                Logger::Tag("MainWindow")
+                    .wFmt("截屏失败: %s", tip.toStdString().c_str());
+              }
+              return;
+            }
+
+            QFile file(filePath);
+            if (!file.open(QIODevice::WriteOnly)) {
+              const QString err = "无法写入截图文件: " + filePath;
+              if (showAlerts) {
+                MailSender::get()->sendEmail("截屏失败", err);
+                ToastWidget::showError(this, err);
+              } else {
+                Logger::Tag("MainWindow")
+                    .wFmt("截屏失败: %s", err.toStdString().c_str());
+              }
+              return;
+            }
+            file.write(process->readAllStandardOutput());
+            file.close();
+
+            Logger::Tag("MainWindow")
+                .dFmt("截屏已保存: %s", filePath.toStdString().c_str());
+          });
+  process->start("adb", {"exec-out", "screencap", "-p"});
+}
+
+void MainWindow::killTargetApp() {
+  QProcess *process = new QProcess(this);
+  connect(process,
+          QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
+          process, &QProcess::deleteLater);
+  process->start("adb", {"shell", "am", "force-stop", targetPackage});
+}
+
 void MainWindow::onOpenSocketButtonClicked() {
   if (WebSocketObserver::get()->isServerRunning()) {
     if (QMessageBox::question(this, "确认", "确定要关闭通信服务吗？",
@@ -713,46 +724,20 @@ void MainWindow::onTaskExecuted(const QDateTime &time) {
     }
   }
 
-  // 延时后执行截屏和杀进程
+  // 延时后截屏，隔 5 秒再杀进程
   QTimer::singleShot(delaySeconds * 1000, this, [this]() {
     if (!executorPtr->isRunning()) {
       return;
     }
-    // 截屏
-    QProcess *captureProcess = new QProcess(this);
-    const QString captureDir =
-        QCoreApplication::applicationDirPath() + "/capture";
-    QDir dir(captureDir);
-    if (!dir.exists()) {
-      dir.mkpath(".");
-    }
-    const QString fileName =
-        QDateTime::currentDateTime().toString("yyyyMMdd_HHmmss") + ".png";
-    const QString filePath = captureDir + "/" + fileName;
+    captureScreen();
 
-    connect(
-        captureProcess,
-        QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished), this,
-        [this, captureProcess, filePath](int exitCode, QProcess::ExitStatus) {
-          captureProcess->deleteLater();
-          if (exitCode == 0) {
-            QFile file(filePath);
-            if (file.open(QIODevice::WriteOnly)) {
-              file.write(captureProcess->readAllStandardOutput());
-              file.close();
-            }
-            Logger::Tag("MainWindow")
-                .dFmt("截屏已保存: %s", filePath.toStdString().c_str());
-          }
-        });
-    captureProcess->start("adb", {"exec-out", "screencap", "-p"});
-
-    // 杀掉目标应用
-    QProcess *killProcess = new QProcess(this);
-    connect(killProcess,
-            QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
-            killProcess, &QProcess::deleteLater);
-    killProcess->start("adb", {"shell", "am", "force-stop", targetPackage});
+    // 截图后再延时 5 秒杀掉目标应用，给截图足够时间完成写入
+    QTimer::singleShot(5000, this, [this]() {
+      if (!executorPtr->isRunning()) {
+        return;
+      }
+      killTargetApp();
+    });
   });
 }
 

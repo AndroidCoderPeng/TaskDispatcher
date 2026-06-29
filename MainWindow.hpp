@@ -78,5 +78,9 @@ private:
   void updateCountDown();
 
   void updateTaskListWidget();
+
+  void captureScreen();
+
+  void killTargetApp();
 };
 #endif // MAINWINDOW_HPP
