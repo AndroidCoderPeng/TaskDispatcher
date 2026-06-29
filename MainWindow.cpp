@@ -513,7 +513,7 @@ void MainWindow::onExecuteTaskButtonClicked() {
   // 加载配置并启动任务执行器
   startTaskExecutor();
   ui->executeTaskButton->setText("停止任务");
-  Logger::Tag("MainWindow").dFmt("链式任务已启动，共 %d 个任务", tasks.size());
+  ui->addTaskButton->setEnabled(false);
 }
 
 void MainWindow::onAddTaskButtonClicked() {
@@ -764,6 +764,7 @@ void MainWindow::startTaskExecutor() {
 void MainWindow::stopTask() {
   taskExecutorPtr->stop();
   ui->executeTaskButton->setText("执行任务");
+  ui->addTaskButton->setEnabled(true);
   ui->taskIndexLabel->setText("0");
 
   // 清空所有任务的实际执行时间
