@@ -80,7 +80,7 @@ void TaskItemWidget::setupUi() {
   mActualPrefixPtr->setStyleSheet(actualBadgeStyle());
 
   // 实际执行时间值（初始为空）
-  mActualTimeLabelPtr = new QLabel(QStringLiteral("—"), this);
+  mActualTimeLabelPtr = new QLabel(QStringLiteral("--:--:--"), this);
   mActualTimeLabelPtr->setAlignment(Qt::AlignCenter);
   mActualTimeLabelPtr->setMinimumWidth(42);
   QFont actualFont = mActualTimeLabelPtr->font();
@@ -103,7 +103,7 @@ QSize TaskItemWidget::sizeHint() const {
 
 void TaskItemWidget::setActualTime(const QTime &time) {
   if (!time.isValid() || time == QTime(0, 0)) {
-    mActualTimeLabelPtr->setText(QStringLiteral("—"));
+    mActualTimeLabelPtr->setText(QStringLiteral("--:--:--"));
     mActualTimeLabelPtr->setStyleSheet("");
   } else {
     mActualTimeLabelPtr->setText(time.toString("HH:mm:ss"));
