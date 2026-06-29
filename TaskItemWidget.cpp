@@ -112,6 +112,11 @@ void TaskItemWidget::setActualTime(const QTime &time) {
   }
 }
 
+void TaskItemWidget::refreshThemeStyle() {
+  mScheduledPrefixPtr->setStyleSheet(scheduledBadgeStyle());
+  mActualPrefixPtr->setStyleSheet(actualBadgeStyle());
+}
+
 qint32 TaskItemWidget::taskId() const { return mTask.id; }
 
 bool TaskItemWidget::isDarkTheme() { return sDarkTheme; }

@@ -432,7 +432,15 @@ void MainWindow::onActionDarkThemeToggled(bool checked) {
       styleFile.close();
     }
   }
-  updateTaskListWidget();
+
+  // 只刷新已有 widget 的主题样式，不重建（保留实际时间等状态）
+  for (int i = 0; i < ui->listWidget->count(); ++i) {
+    auto *widget = dynamic_cast<TaskItemWidget *>(
+        ui->listWidget->itemWidget(ui->listWidget->item(i)));
+    if (widget) {
+      widget->refreshThemeStyle();
+    }
+  }
 }
 
 void MainWindow::onActionSyncDataClicked() {

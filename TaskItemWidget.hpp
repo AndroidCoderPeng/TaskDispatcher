@@ -18,6 +18,9 @@ public:
   /// 设置实际执行时间（计划时间 + 随机偏移）
   void setActualTime(const QTime &time);
 
+  /// 刷新主题样式（不重建 UI，保留实际时间等状态）
+  void refreshThemeStyle();
+
   qint32 taskId() const;
 
   static bool isDarkTheme();
