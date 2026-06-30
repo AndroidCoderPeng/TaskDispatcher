@@ -13,8 +13,6 @@
 #include "TaskItemWidget.hpp"
 #include "TaskStore.hpp"
 #include "ToastWidget.hpp"
-#include "WebSocketObserver.hpp"
-#include "WsProtocol.hpp"
 #include "WxMessageSender.hpp"
 #include "WxSettingDialog.hpp"
 
@@ -70,9 +68,6 @@ MainWindow::MainWindow(QWidget *parent)
     }
   }
 
-  // 清除QComboBox的QAbstractItemView::item默认QSS
-  ui->ipv4Box->setView(new QListView());
-
   // 连接顶部菜单信号和槽
   connect(ui->actionImportData, &QAction::triggered, this,
           &MainWindow::onActionImportDataClicked);
@@ -125,8 +120,6 @@ MainWindow::MainWindow(QWidget *parent)
           &MainWindow::onExecuteTaskButtonClicked);
   connect(ui->addTaskButton, &QPushButton::clicked, this,
           &MainWindow::onAddTaskButtonClicked);
-  connect(ui->openSocketButton, &QPushButton::clicked, this,
-          &MainWindow::onOpenSocketButtonClicked);
 
   // 连接 RadioButton 信号：通知方式切换
   connect(ui->emailRadioButton, &QRadioButton::toggled, this,
@@ -168,14 +161,6 @@ MainWindow::MainWindow(QWidget *parent)
           &MainWindow::slotOpenAppSuccess);
   connect(processExecutorPtr, &ProcessExecutor::signalOpenAppFailed, this,
           &MainWindow::slotOpenAppFailed);
-}
-
-/// —————————— 外部调用函数 ——————————
-void MainWindow::bindIpAddresses(const QList<QString> &ips) {
-  ui->ipv4Box->clear();
-  for (const QString &ip : ips) {
-    ui->ipv4Box->addItem(ip);
-  }
 }
 
 /// —————————— 内部私有函数 ——————————
@@ -565,12 +550,6 @@ void MainWindow::onExecuteTaskButtonClicked() {
     return;
   }
 
-  // 检查通信服务状态
-  if (!WebSocketObserver::get()->isServerRunning()) {
-    QMessageBox::warning(this, "警告", "通信服务未开启，请先开启通信服务");
-    return;
-  }
-
   // 检查是否有任务
   const auto tasks = TaskStore::get().loadAll();
   if (tasks.isEmpty()) {
@@ -609,21 +588,6 @@ void MainWindow::updateTaskListWidget() {
     TaskItemWidget *taskWidget = new TaskItemWidget(task, ui->listWidget);
     item->setSizeHint(taskWidget->sizeHint());
     ui->listWidget->setItemWidget(item, taskWidget);
-  }
-}
-
-void MainWindow::onOpenSocketButtonClicked() {
-  if (WebSocketObserver::get()->isServerRunning()) {
-    const auto ret =
-        QMessageBox::question(this, "确认", "确定要关闭通信服务吗？",
-                              QMessageBox::Yes | QMessageBox::No);
-    if (ret == QMessageBox::Yes) {
-      WebSocketObserver::get()->stopServer();
-      // 任务也需要一起关闭
-      stopTask();
-    }
-  } else {
-    WebSocketObserver::get()->startServer(ui->ipv4Box->currentText());
   }
 }
 
@@ -696,31 +660,6 @@ void MainWindow::onCustomAction(const QListWidgetItem *item,
   }
 }
 
-void MainWindow::slotNoClient() {
-  sendMessageToUser("客户端断开连接通知", "请注意：客户端与本地服务断开！");
-}
-
-void MainWindow::slotServerStateChanged(const WebSocketState &state) {
-  if (state == WebSocketState::RUNNING) {
-    ui->socketIconView->setPixmap(QPixmap(":/socket_listening.png"));
-    ui->socketStateView->setText("通信服务已开启");
-    ui->openSocketButton->setText("关闭通信服务");
-    ui->ipv4Box->setEnabled(false);
-  } else {
-    ui->socketIconView->setPixmap(QPixmap(":/socket_shutdown.png"));
-    ui->socketStateView->setText("通信服务已关闭");
-    ui->openSocketButton->setText("开启通信服务");
-    ui->ipv4Box->setEnabled(true);
-    sendMessageToUser("服务关闭通知", "通信服务已关闭，请记得自行手动打卡！");
-  }
-}
-
-void MainWindow::slotDataReceived(const QString &message) {
-  // TODO 响应客户端的消息，处理后续逻辑
-  Logger::Tag("MainWindow")
-      .dFmt("Received message: %s", message.toStdString().c_str());
-}
-
 void MainWindow::slotSyncSuccess(const QString &message) {
   QMessageBox::information(this, "提示", message);
 }
@@ -731,17 +670,10 @@ void MainWindow::slotSyncError(const QString &error) {
 
 void MainWindow::slotTaskExecuted(const QDateTime &actualTime, qint32 taskId,
                                   int current, int total) {
-  const auto observer = WebSocketObserver::get();
-  if (!observer->isServerRunning()) {
-    ToastWidget::showWarning(this, "通信服务未开启，请先开启通信服务");
-    sendMessageToUser("任务执行失败通知", "通信服务未开启，请先开启通信服务");
-    return;
-  }
-  observer->sendMessage(WsProtocol::Action::OPEN_APP);
-  Logger::Tag("MainWindow")
-      .dFmt("任务已执行: %d/%d (ID=%d), 实际时间=%s", current, total, taskId,
-            actualTime.toString("HH:mm:ss").toStdString().c_str());
-  // TODO 等delay时间到，通过adb截屏，再通过adb杀掉目标应用
+  // 1.先打开目标APP
+  // processExecutorPtr->openTargetApp(packageName);
+
+  // TODO  2.开始计时，时长为delay，倒计时结束通过adb截屏，在等15s通过adb杀掉目标应用
 }
 
 void MainWindow::slotNextTaskScheduled(int nextIndex,

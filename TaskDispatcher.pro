@@ -4,7 +4,7 @@ win32 {
     RC_ICONS = application.ico
 }
 
-QT     += core gui widgets network websockets sql concurrent
+QT     += core gui widgets network sql concurrent
 
 CONFIG += c++14
 
@@ -27,7 +27,6 @@ SOURCES += \
     TaskItemWidget.cpp \
     TaskStore.cpp \
     ToastWidget.cpp \
-    WebSocketObserver.cpp \
     WxMessageSender.cpp \
     WxSettingDialog.cpp \
     main.cpp \
@@ -50,8 +49,6 @@ HEADERS += \
     TaskItemWidget.hpp \
     TaskStore.hpp \
     ToastWidget.hpp \
-    WebSocketObserver.hpp \
-    WsProtocol.hpp \
     WxMessageSender.hpp \
     WxSettingDialog.hpp
 

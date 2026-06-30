@@ -4,8 +4,6 @@
 #include <QDateTime>
 #include <QString>
 
-enum class WebSocketState { RUNNING, SHUTDOWN };
-
 struct EmailConfig {
   QString emailTitle;
   QString senderEmail;

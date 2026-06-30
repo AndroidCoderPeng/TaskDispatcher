@@ -6,20 +6,20 @@
             <rect>
                 <x>0</x>
                 <y>0</y>
-                <width>500</width>
-                <height>450</height>
+                <width>450</width>
+                <height>405</height>
             </rect>
         </property>
         <property name="minimumSize">
             <size>
-                <width>500</width>
-                <height>450</height>
+                <width>450</width>
+                <height>405</height>
             </size>
         </property>
         <property name="maximumSize">
             <size>
-                <width>500</width>
-                <height>450</height>
+                <width>450</width>
+                <height>405</height>
             </size>
         </property>
         <widget class="QWidget" name="centralWidget">
@@ -203,65 +203,6 @@
                                     </widget>
                                 </item>
                             </layout>
-                        </item>
-                    </layout>
-                </item>
-                <item>
-                    <layout class="QHBoxLayout" name="horizontalLayout">
-                        <property name="spacing">
-                            <number>8</number>
-                        </property>
-                        <item>
-                            <widget class="QLabel" name="socketIconView">
-                                <property name="minimumSize">
-                                    <size>
-                                        <width>24</width>
-                                        <height>24</height>
-                                    </size>
-                                </property>
-                                <property name="maximumSize">
-                                    <size>
-                                        <width>24</width>
-                                        <height>24</height>
-                                    </size>
-                                </property>
-                                <property name="pixmap">
-                                    <pixmap resource="image.qrc">:/socket_shutdown.png</pixmap>
-                                </property>
-                                <property name="scaledContents">
-                                    <bool>true</bool>
-                                </property>
-                            </widget>
-                        </item>
-                        <item>
-                            <widget class="QLabel" name="socketStateView">
-                                <property name="text">
-                                    <string>通信服务未启动</string>
-                                </property>
-                            </widget>
-                        </item>
-                        <item>
-                            <spacer name="horizontalSpacer">
-                                <property name="orientation">
-                                    <enum>Qt::Horizontal</enum>
-                                </property>
-                                <property name="sizeHint" stdset="0">
-                                    <size>
-                                        <width>0</width>
-                                        <height>0</height>
-                                    </size>
-                                </property>
-                            </spacer>
-                        </item>
-                        <item>
-                            <widget class="QComboBox" name="ipv4Box"/>
-                        </item>
-                        <item>
-                            <widget class="QPushButton" name="openSocketButton">
-                                <property name="text">
-                                    <string>启动通讯服务</string>
-                                </property>
-                            </widget>
                         </item>
                     </layout>
                 </item>

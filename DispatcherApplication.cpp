@@ -2,7 +2,6 @@
 
 #include "ConfigStore.hpp"
 #include "Logger.hpp"
-#include "WebSocketObserver.hpp"
 
 #include <QFile>
 #include <QFontDatabase>
@@ -35,33 +34,6 @@ DispatcherApplication::DispatcherApplication(int &argc, char **argv)
   }
 
   initMainWindow();
-
-  const QList<QHostAddress> addresses = QNetworkInterface::allAddresses();
-  QList<QString> ips;
-  for (const QHostAddress &address : addresses) {
-    if (address.protocol() == QAbstractSocket::IPv4Protocol &&
-        address != QHostAddress::LocalHost && !address.isLoopback()) {
-      ips.append(address.toString().toUtf8().constData());
-    }
-  }
-
-  if (ips.isEmpty()) {
-    QMessageBox::warning(nullptr, "警告",
-                         "未找到有效的IPv4地址，应用程序将退出。");
-    QTimer::singleShot(0, this, &QCoreApplication::quit);
-    return;
-  }
-
-  mainWindowPtr->bindIpAddresses(ips);
-
-  // 启动 WebSocket 服务端并初始化WebSocket信号连接
-  const auto observer = WebSocketObserver::get();
-  QObject::connect(observer, &WebSocketObserver::signalNoClient, mainWindowPtr,
-                   &MainWindow::slotNoClient);
-  QObject::connect(observer, &WebSocketObserver::signalServerStateChanged,
-                   mainWindowPtr, &MainWindow::slotServerStateChanged);
-  QObject::connect(observer, &WebSocketObserver::signalDataReceived,
-                   mainWindowPtr, &MainWindow::slotDataReceived);
 }
 
 void DispatcherApplication::initMainWindow() {
