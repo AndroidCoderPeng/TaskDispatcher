@@ -24,15 +24,16 @@ public:
   void bindIpAddresses(const QList<QString> &ips);
 
 public slots:
+
   void slotNoClient();
 
   void slotServerStateChanged(const WebSocketState &state);
 
   void slotDataReceived(const QString &message);
 
-  void slotScreenCaptured(const QString &filePath);
+  void slotSyncSuccess(const QString &message);
 
-  void slotCaptureFailed(const QString &message);
+  void slotSyncError(const QString &error);
 
   void slotTaskExecuted(const QDateTime &actualTime, qint32 taskId, int current,
                         int total);
@@ -46,11 +47,22 @@ public slots:
 
   void slotCycleReset();
 
+  void slotScreenCaptured(const QString &filePath);
+
+  void slotCaptureFailed(const QString &message);
+
 private:
   Ui::MainWindow *ui;
-  QString targetPackage = "com.alibaba.android.rimet";
   TaskExecutor *taskExecutorPtr = nullptr;
   ProcessExecutor *processExecutorPtr = nullptr;
+
+  const QHash<QString, QString> nameToPackage = {
+      {"钉钉", "com.alibaba.android.rimet"},
+      {"企业微信", "com.tencent.wework"},
+      {"飞书", "com.ss.android.lark"},
+      {"QQ", "com.tencent.mobileqq"},
+      {"微信", "com.tencent.mm"},
+      {"抖音", "com.ss.android.ugc.aweme"}};
 
   // ====== 菜单栏 ======
   void onActionImportDataClicked();
@@ -98,9 +110,5 @@ private:
   void stopTask();
 
   void updateTaskListWidget();
-
-  void captureScreen();
-
-  void killTargetApp();
 };
 #endif // MAINWINDOW_HPP

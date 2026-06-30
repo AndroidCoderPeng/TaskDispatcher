@@ -139,13 +139,10 @@ MainWindow::MainWindow(QWidget *parent)
 
   // 连接节假日数据同步信号
   const auto holidayManager = ChinaHolidayManager::get();
-  connect(
-      holidayManager, &ChinaHolidayManager::signalSyncSuccess, this,
-      [this](const QString &message) { ToastWidget::showInfo(this, message); });
+  connect(holidayManager, &ChinaHolidayManager::signalSyncSuccess, this,
+          &MainWindow::slotSyncSuccess);
   connect(holidayManager, &ChinaHolidayManager::signalSyncError, this,
-          [this](const QString &message) {
-            ToastWidget::showError(this, message);
-          });
+          &MainWindow::slotSyncError);
 
   // 创建任务执行器并连接信号
   taskExecutorPtr = new TaskExecutor(this);
@@ -452,7 +449,9 @@ void MainWindow::onActionSyncDataClicked() {
   ChinaHolidayManager::get()->updateChinaHolidayData();
 }
 
-void MainWindow::onActionCaptureScreenClicked() { captureScreen(); }
+void MainWindow::onActionCaptureScreenClicked() {
+  processExecutorPtr->captureScreen();
+}
 
 void MainWindow::onActionOpenTargetAppClicked() {
   // 发送 websocket 消息给客户端，通知客户端打开目标应用
@@ -464,7 +463,18 @@ void MainWindow::onActionOpenTargetAppClicked() {
   observer->sendMessage(WsProtocol::Action::OPEN_APP);
 }
 
-void MainWindow::onActionKillTargetAppClicked() { killTargetApp(); }
+void MainWindow::onActionKillTargetAppClicked() {
+  bool ok = false;
+  const QString inputValue =
+      QInputDialog::getText(this, "关闭应用", "请输入想要关闭的APP名字或者包名",
+                            QLineEdit::Normal, QString(), &ok);
+
+  if (ok && !inputValue.isEmpty()) {
+    // 先查映射表，找不到则直接作为包名使用
+    const QString packageName = nameToPackage.value(inputValue, inputValue);
+    processExecutorPtr->killTargetApp(packageName);
+  }
+}
 
 void MainWindow::onActionTestEmailClicked() {
   QJsonObject obj = ConfigStore::get().load("emailConfig");
@@ -559,12 +569,6 @@ void MainWindow::updateTaskListWidget() {
     item->setSizeHint(taskWidget->sizeHint());
     ui->listWidget->setItemWidget(item, taskWidget);
   }
-}
-
-void MainWindow::captureScreen() { processExecutorPtr->captureScreen(); }
-
-void MainWindow::killTargetApp() {
-  processExecutorPtr->killTargetApp(targetPackage);
 }
 
 void MainWindow::onOpenSocketButtonClicked() {
@@ -681,15 +685,12 @@ void MainWindow::slotDataReceived(const QString &message) {
   observer->sendMessage(WsProtocol::Action::OPEN_APP);
 }
 
-void MainWindow::slotScreenCaptured(const QString &filePath) {
-  Logger::Tag("MainWindow")
-      .dFmt("截屏已保存: %s", filePath.toStdString().c_str());
-  ToastWidget::showInfo(this, "截屏已保存: " + filePath);
+void MainWindow::slotSyncSuccess(const QString &message) {
+  ToastWidget::showInfo(this, message);
 }
 
-void MainWindow::slotCaptureFailed(const QString &message) {
-  MailSender::get()->sendEmail("截屏失败", message);
-  ToastWidget::showError(this, message);
+void MainWindow::slotSyncError(const QString &error) {
+  ToastWidget::showError(this, error);
 }
 
 void MainWindow::slotTaskExecuted(const QDateTime &actualTime, qint32 taskId,
@@ -719,6 +720,7 @@ void MainWindow::slotNextTaskScheduled(int nextIndex,
 
 void MainWindow::slotDayFinished() {
   Logger::Tag("MainWindow").i("当天所有任务执行完毕，重置任务列表实际时间");
+  ui->taskIndexLabel->setText("0");
   for (int i = 0; i < ui->listWidget->count(); ++i) {
     auto *widget = dynamic_cast<TaskItemWidget *>(
         ui->listWidget->itemWidget(ui->listWidget->item(i)));
@@ -730,6 +732,7 @@ void MainWindow::slotDayFinished() {
 
 void MainWindow::slotHolidaySkipped() {
   Logger::Tag("MainWindow").i("节假日，跳过今日所有任务");
+  ui->taskIndexLabel->setText("0");
   for (int i = 0; i < ui->listWidget->count(); ++i) {
     auto *widget = dynamic_cast<TaskItemWidget *>(
         ui->listWidget->itemWidget(ui->listWidget->item(i)));
@@ -742,6 +745,7 @@ void MainWindow::slotHolidaySkipped() {
 void MainWindow::slotCycleReset() {
   Logger::Tag("MainWindow").i("新一天周期开始");
   // 清空上一轮的实际时间，等待新一轮的信号更新
+  ui->taskIndexLabel->setText("0");
   for (int i = 0; i < ui->listWidget->count(); ++i) {
     auto *widget = dynamic_cast<TaskItemWidget *>(
         ui->listWidget->itemWidget(ui->listWidget->item(i)));
@@ -749,6 +753,17 @@ void MainWindow::slotCycleReset() {
       widget->setActualTime(QTime());
     }
   }
+}
+
+void MainWindow::slotScreenCaptured(const QString &filePath) {
+  Logger::Tag("MainWindow")
+      .dFmt("截屏已保存: %s", filePath.toStdString().c_str());
+  ToastWidget::showInfo(this, "截屏已保存: " + filePath);
+}
+
+void MainWindow::slotCaptureFailed(const QString &message) {
+  MailSender::get()->sendEmail("截屏失败", message);
+  ToastWidget::showError(this, message);
 }
 
 void MainWindow::updateCountDown() {
