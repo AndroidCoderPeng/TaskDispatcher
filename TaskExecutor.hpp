@@ -42,9 +42,6 @@ signals:
   // 节假日导致当日跳过（执行器仍在运行，等待下一天周期）
   void signalHolidaySkipped();
 
-  // 新一天周期开始，任务已重新加载
-  void signalCycleReset();
-
 private slots:
   void onTimerTimeout();
 

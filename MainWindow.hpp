@@ -36,8 +36,6 @@ public slots:
 
   void slotHolidaySkipped();
 
-  void slotCycleReset();
-
   void slotScreenCaptured(const QString &filePath);
 
   void slotCaptureFailed(const QString &message);

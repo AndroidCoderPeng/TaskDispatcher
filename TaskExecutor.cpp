@@ -136,6 +136,12 @@ void TaskExecutor::onTimerTimeout() {
     return;
   }
 
+  // 如果所有任务已完成，说明是 waitForReset 的定时器触发，开始新周期
+  if (currentIndex >= tasks.size()) {
+    startNewCycle();
+    return;
+  }
+
   // 第一层：执行下一个任务
   executeNextTask();
 }
@@ -256,7 +262,6 @@ void TaskExecutor::startNewCycle() {
 
   reloadTasks();
   precomputeRandomOffsets();
-  emit signalCycleReset();
 
   if (tasks.isEmpty()) {
     Logger::Tag("TaskExecutor").w("新周期无任务，等待下一个重置点");

@@ -150,8 +150,7 @@ MainWindow::MainWindow(QWidget *parent)
           &MainWindow::slotDayFinished);
   connect(taskExecutorPtr, &TaskExecutor::signalHolidaySkipped, this,
           &MainWindow::slotHolidaySkipped);
-  connect(taskExecutorPtr, &TaskExecutor::signalCycleReset, this,
-          &MainWindow::slotCycleReset);
+
 
   // 创建进程执行器并连接信号
   processExecutorPtr = new ProcessExecutor(this);
@@ -592,7 +591,21 @@ void MainWindow::onAddTaskButtonClicked() {
   if (dialog.exec() == QDialog::Accepted) {
     const auto result = dialog.getInputValue();
     if (result.first) {
-      const qint32 newId = TaskStore::get().add(result.second);
+      const Task &newTask = result.second;
+      const QString newTimeStr = newTask.scheduledTime.toString("HH:mm:ss");
+
+      // 检查是否已存在相同时间点的任务
+      const QList<Task> existingTasks = TaskStore::get().loadAll();
+      for (const Task &t : existingTasks) {
+        if (t.scheduledTime.toString("HH:mm:ss") == newTimeStr) {
+          QMessageBox::information(
+              this, "提示",
+              QString("时间点 %1 已存在，请选择其他时间").arg(newTimeStr));
+          return;
+        }
+      }
+
+      const qint32 newId = TaskStore::get().add(newTask);
       if (newId > 0) {
         // 刷新列表和任务数量
         updateTaskListWidget();
@@ -603,7 +616,13 @@ void MainWindow::onAddTaskButtonClicked() {
 
 void MainWindow::updateTaskListWidget() {
   ui->listWidget->clear();
-  const QList<Task> tasks = TaskStore::get().loadAll();
+  QList<Task> tasks = TaskStore::get().loadAll();
+
+  // 按时间升序排列
+  std::sort(tasks.begin(), tasks.end(), [](const Task &a, const Task &b) {
+    return a.scheduledTime < b.scheduledTime;
+  });
+
   for (const Task &task : tasks) {
     QListWidgetItem *item = new QListWidgetItem(ui->listWidget);
     item->setData(Qt::UserRole, task.id);
@@ -762,21 +781,6 @@ void MainWindow::slotHolidaySkipped() {
   sendMessageToUser("普天同庆", "今天不上班~，出去玩玩吧！");
 }
 
-void MainWindow::slotCycleReset() {
-  Logger::Tag("MainWindow").i("新一天周期开始");
-  // 清空上一轮的实际时间，等待新一轮的信号更新
-  ui->taskIndexLabel->setText("0");
-  for (int i = 0; i < ui->listWidget->count(); ++i) {
-    auto *widget = dynamic_cast<TaskItemWidget *>(
-        ui->listWidget->itemWidget(ui->listWidget->item(i)));
-    if (widget) {
-      widget->setActualTime(QTime());
-    }
-  }
-  sendMessageToUser("slotCycleReset-任务重置通知",
-                    "任务重置成功，新一天开始！");
-}
-
 void MainWindow::slotScreenCaptured(const QString &filePath) {
   Logger::Tag("MainWindow")
       .dFmt("截屏已保存: %s", filePath.toStdString().c_str());
@@ -816,7 +820,7 @@ void MainWindow::slotOpenAppSuccess(const QString &packageName) {
   }
 
   // 读取 delay 配置，延迟后截屏
-  int delaySeconds = 30; // 默认 30 秒
+  int delaySeconds = 30;
   {
     const QJsonObject saved = ConfigStore::get().load("delayTimeConfig");
     if (saved.contains("seconds")) {
@@ -874,10 +878,6 @@ void MainWindow::resetTaskState() {
   // 重新启动任务执行器，开始新的一天任务
   if (taskExecutorPtr) {
     startTaskExecutor();
-    Logger::Tag("MainWindow").i("任务执行器已重新启动，开始新的一天任务");
-    ToastWidget::showInfo(this, "任务状态已重置，新的一天任务已开始");
-    sendMessageToUser("resetTaskState-任务重置通知",
-                      "任务重置成功，新一天开始！");
   }
 }
 
