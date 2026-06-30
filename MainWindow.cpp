@@ -693,8 +693,20 @@ void MainWindow::slotSyncError(const QString &error) {
 
 void MainWindow::slotTaskExecuted(const QDateTime &actualTime, qint32 taskId,
                                   int current, int total) {
+  QJsonObject obj = ConfigStore::get().load("targetAppConfig");
+  if (obj.isEmpty()) {
+    sendMessageToUser("任务执行失败", "未配置目标APP，无法执行后续步骤");
+    return;
+  }
+
+  const auto packageName = obj["targetApp"].toString();
   // 1.先打开目标APP
-  // processExecutorPtr->openTargetApp(packageName);
+  processExecutorPtr->openTargetApp(packageName);
+
+  Logger::Tag("MainWindow")
+      .dFmt("Task executed: taskId=%d, actualTime=%s, current=%d, total=%d",
+            taskId, actualTime.toString("HH:mm:ss").toStdString().c_str(),
+            current, total);
 
   // TODO  2.开始计时，时长为delay，倒计时结束通过adb截屏，在等15s通过adb杀掉目标应用
 }
