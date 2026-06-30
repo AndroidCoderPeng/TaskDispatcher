@@ -1,192 +1,126 @@
-# TaskDispatcher - 任务调度器
+# TaskDispatcher - Android 设备定时任务调度器
 
-一个基于 Qt 开发的现代化任务调度管理工具，支持 WebSocket 通信、多通知渠道和灵活的定时任务管理。
+一个基于 Qt 5 的跨平台桌面应用，用于自动化管理 Android 设备的定时任务。通过 ADB 命令在预设时间点唤醒 Android 设备、打开指定
+App、截屏，并将结果通过邮件或企业微信通知用户。
 
-## ✨ 功能特性
+## 功能特性
 
-- 📅 **任务管理**：每日任务自动刷新与重置
-- 🔔 **多渠道通知**：支持邮箱和企业微信通知
-- 🌐 **WebSocket 服务**：内置 WebSocket 服务端，支持实时通信
--  **双主题切换**：提供亮色和深色两种 macOS 风格主题
-- ⚙️ **灵活配置**：支持任务超时、随机时间、节假日跳过等高级设置
-- 💾 **数据同步**：支持节假日数据同步和本地数据导入导出
+- **定时任务调度**：按预设时间点自动执行任务，支持每日循环
+- **ADB设备交互**：亮屏、解锁、打开 App、截屏、杀进程、息屏全流程自动化
+- **随机时间偏移**：任务执行时间可添加随机偏移（3-30分钟），避免规律性被检测
+- **节假日跳过**：自动同步中国法定节假日数据，节假日自动跳过任务执行
+- **双重通知渠道**：支持 QQ邮箱（SMTP/SSL）和企业微信 Webhook 机器人推送截图
+- **截屏压缩**：自动压缩截屏 PNG 图片至 2MB 以内，满足邮件附件和企微图片大小限制
+- **任务持久化**：SQLite 存储任务数据，JSON 文件存储配置
+- **数据导入导出**：支持配置和任务数据的 JSON 格式导入/导出
+- **双主题支持**：亮色/暗色主题一键切换
+- **系统托盘**：支持最小化到系统托盘，后台静默运行
+- **日志系统**：控制台彩色边框日志输出，方便调试和监控
 
-## ️ 技术栈
+## 截图预览
 
-- **框架**: Qt 5 (Widgets)
-- **语言**: C++11
-- **网络**: Qt Network, Qt WebSockets
-- **数据库**: Qt SQL
-- **构建工具**: qmake
+主界面包含：当前日期/时间显示、任务倒计时、执行/停止控制、通知方式选择、任务进度指示、任务列表管理等功能。
 
-## 📦 项目结构
+## 系统要求
 
-```
-TaskDispatcher/
-├── main.cpp                    # 程序入口
-├── DispatcherApplication.hpp   # 应用程序类
-├── DispatcherApplication.cpp
-├── MainWindow.hpp              # 主窗口类
-├── MainWindow.cpp
-├── MainWindow.ui               # UI 界面设计
-├── WebSocketObserver.hpp       # WebSocket 观察者
-├── WebSocketObserver.cpp
-├── Logger.hpp                  # 日志记录器
-├── Logger.cpp
-── GlobalDefinition.hpp        # 全局定义
-├── font.qrc                    # 字体资源
-├── image.qrc                   # 图片资源
-├── style.qrc                   # 样式表资源
-├── style_light.qss             # 亮色主题样式
-├── style_dark.qss              # 深色主题样式
-└── TaskDispatcher.pro          # 项目配置文件
-```
+- **操作系统**：Windows / Linux / macOS
+- **运行时环境**：Qt 5.12+
+- **外部依赖**：Android ADB（需在 PATH 环境变量中）
+- **编译标准**：C++14
 
-## 🚀 快速开始
+## 构建依赖
 
-### 环境要求
+| 依赖         | 说明         |
+|------------|------------|
+| Qt 5.12+   | 核心框架       |
+| Qt Widgets | UI 组件      |
+| Qt Network | 网络请求       |
+| Qt SQL     | SQLite 数据库 |
+| qmake      | 构建系统       |
 
-- Qt 5.12+
-- C++11 编译器
-- Windows / Linux / macOS
-
-### 编译运行
-
-#### 使用 Qt Creator
-
-1. 打开 `TaskDispatcher.pro` 文件
-2. 选择 Kit（建议使用 Qt 5.15+）
-3. 点击 "Run" 按钮即可运行
-
-#### 使用命令行
+## 编译构建
 
 ```bash
-# 进入项目目录
+# 使用 Qt Creator 打开 TaskDispatcher.pro
+# 或命令行构建：
 cd TaskDispatcher
-
-# 生成 Makefile
 qmake TaskDispatcher.pro
-
-# 编译
-make
-
-# 运行
-./TaskDispatcher    # Linux/macOS
-TaskDispatcher.exe  # Windows
+make          # Linux / macOS
+mingw32-make  # Windows MinGW
 ```
 
-##  主题切换
+## 配置说明
 
-应用支持亮色和深色两种主题，可在菜单中切换：
+| 配置项    | 默认值      | 范围               | 说明                     |
+|--------|----------|------------------|------------------------|
+| 目标APP  | 无        | 钉钉/企微/飞书/自定义包名   | 自动流程中要打开的应用            |
+| 邮箱配置   | 无        | QQ邮箱             | SMTP 发送参数（发件箱、授权码、收件箱） |
+| 企微配置   | 无        | 企业微信 Webhook Key | 机器人消息推送                |
+| 通知方式   | 邮箱       | 邮箱/企微            | 选择通知渠道                 |
+| 任务等待时间 | 30秒      | 10-120秒          | 打开 App 后等待截屏的延迟        |
+| 任务重置时间 | 00:00:00 | 任意时间             | 每日任务重置点                |
+| 随机时间   | 开启，5分钟   | 3-30分钟           | 任务执行时间随机偏移范围           |
+| 跳过节假日  | 开启       | 开/关              | 法定节假日自动跳过              |
+| 暗色主题   | 关闭       | 开/关              | 亮/暗双主题切换               |
 
-- **视图 → 暗色主题**：启用/禁用深色模式
+## 执行流程
 
-主题特点：
-- macOS 风格渐变按钮
-- 统一的深蓝色配色 (#007AFF)
-- 圆角设计和阴影效果
-- 流畅的交互反馈
-
-## ⚙️ 主要功能说明
-
-### 1. 任务管理
-
-- **今日任务列表**：显示当天待执行的任务
-- **任务进度追踪**：实时显示任务完成状态
-- **自动刷新**：到达设定时间后自动刷新每日任务
-- **手动添加**：支持临时添加一次性任务
-
-### 2. 通知渠道
-
-- **邮箱通知**：配置 SMTP 服务器发送任务提醒
-- **企业微信**：通过企业微信机器人推送消息
-- **测试功能**：可即时测试通知渠道是否正常工作
-
-### 3. WebSocket 服务
-
-- **启动服务**：选择本地 IP 地址启动 WebSocket 服务端
-- **端口配置**：默认监听指定端口（可在代码中修改）
-- **状态监控**：实时显示服务运行状态
-- **数据接收**：接收并处理客户端发送的消息
-
-### 4. 高级设置
-
-- **任务超时时间**：设置任务执行的最大时长
-- **任务重置时间**：自定义每日任务重置时间点
-- **随机时间**：为任务添加随机延迟，避免集中执行
-- **跳过节假日**：自动识别并跳过法定节假日
-
-### 5. 数据管理
-
-- **导入数据**：从外部文件导入任务配置
-- **导出数据**：将当前配置导出备份
-- **同步节假日**：从网络获取最新节假日数据
-
-## 📝 开发指南
-
-### 添加新通知渠道
-
-1. 在 `MainWindow` 中添加新的配置项
-2. 实现通知发送逻辑
-3. 在菜单中添加对应设置项
-
-### 修改 WebSocket 端口
-
-编辑相关代码，修改端口号配置：
-
-```cpp
-// 示例：修改为 8080 端口
-server->listen(QHostAddress::Any, 8080);
+```
+任务触发
+  → 亮屏（adb shell input keyevent KEYCODE_WAKEUP）
+  → 解锁（滑动解锁手势）
+  → 打开目标应用（adb shell monkey）
+  → 等待 N 秒（可配置）
+  → 截屏（adb exec-out screencap -p）
+  → 压缩图片（阶梯降分辨率 PNG 编码，目标 ≤2MB）
+  → 发送通知（邮件附件 / 企业微信图片消息）
+  → 等待 15 秒
+  → 关闭目标应用（adb shell am force-stop）
+  → 息屏（adb shell input keyevent KEYCODE_SLEEP）
 ```
 
-### 自定义样式
+## 架构概览
 
-编辑 `style_light.qss` 或 `style_dark.qss` 文件：
-
-```css
-/* 修改按钮颜色 */
-QPushButton {
-    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                                stop:0 #NEW_COLOR_1, 
-                                stop:1 #NEW_COLOR_2);
-}
+```
+DispatcherApplication (QApplication)
+  └── MainWindow (QMainWindow)          [中央控制器]
+        ├── TaskExecutor                [调度引擎]
+        │     └── TaskStore             [SQLite 任务存储]
+        ├── ProcessExecutor             [ADB 命令执行]
+        ├── MailSender                  [邮件通知]
+        ├── WxMessageSender             [企业微信通知]
+        ├── ChinaHolidayManager         [节假日管理]
+        ├── ImageProcessor              [图片压缩]
+        ├── ConfigStore                 [JSON 配置存储]
+        ├── ToastWidget                 [Toast 提示]
+        └── TaskItemWidget              [任务列表项]
 ```
 
-## 🔧 常见问题
+## 数据存储
 
-### Q: 如何切换主题？
-A: 点击菜单栏 **视图 → 暗色主题** 即可切换。
+- **任务数据**：SQLite 数据库（`tasks.db`），存储所有定时任务
+- **配置数据**：JSON 文件（`task_config.json`），存储邮件、企微、App 等配置
+- **截图文件**：`capture/` 目录，存储压缩前后的截屏图片
+- **节假日缓存**：ConfigStore 中按年份缓存中国节假日数据
 
-### Q: WebSocket 服务无法启动？
-A: 请检查：
-- 端口是否被占用
-- 防火墙是否阻止
-- 选择的 IP 地址是否正确
+## 快捷操作
 
-### Q: 通知发送失败？
-A: 请检查：
-- 邮箱 SMTP 配置是否正确
-- 企业微信机器人地址是否有效
-- 网络连接是否正常
+- `Ctrl+I` — 导入数据
+- `Ctrl+E` — 导出数据
+- `Ctrl+T` — 设置任务等待时间
+- `Ctrl+R` — 设置任务重置时间
+- `Ctrl+Q` — 退出程序
 
-### Q: 节假日数据同步失败？
-A: 请确保：
-- 网络连接正常
-- 节假日 API 服务可用
-- 尝试稍后重新同步
+## 应用包名映射
 
-##  许可证
+| 应用   | 包名                        |
+|------|---------------------------|
+| 钉钉   | com.alibaba.android.rimet |
+| 企业微信 | com.tencent.wework        |
+| 飞书   | com.ss.android.lark       |
+| QQ   | com.tencent.mobileqq      |
+| 微信   | com.tencent.mm            |
 
-本项目仅供学习和研究使用。
+## 许可证
 
-## 👥 贡献
-
-欢迎提交 Issue 和 Pull Request！
-
-## 📮 联系方式
-
-如有问题或建议，欢迎反馈。
-
----
-
-**注意**: 本项目的部分功能（如节假日 API、邮件服务等）需要配置相应的账号和密钥才能正常使用。
+本项目仅供学习和个人使用。

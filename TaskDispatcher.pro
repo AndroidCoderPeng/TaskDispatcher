@@ -64,31 +64,12 @@ RESOURCES += \
     image.qrc \
     style.qrc
 
-# 拷贝 OpenSSL DLL（Windows 下 Qt SSL 需要）
-win32 {
-    # 常见 OpenSSL 安装路径
-    OPENSSL_PATHS = \
-        "C:/Program Files/OpenSSL-Win64/bin" \
-        "C:/Program Files/OpenSSL-Win32/bin" \
-        "C:/OpenSSL-Win64/bin" \
-        "C:/vcpkg/installed/x64-windows/bin"
-
-    for(OPENSSL_PATH, OPENSSL_PATHS) {
-        exists($$OPENSSL_PATH/libcrypto-1_1-x64.dll) {
-            message("Found OpenSSL at $$OPENSSL_PATH")
-            # 拷贝到构建输出目录
-            QMAKE_POST_LINK += $$quote(cmd /c copy /y \"$$replace(OPENSSL_PATH, /, \\)\\libcrypto-1_1-x64.dll\" \"$$replace(OUT_PWD, /, \\)\\release\\\" > nul 2>&1)
-            QMAKE_POST_LINK += && $$quote(cmd /c copy /y \"$$replace(OPENSSL_PATH, /, \\)\\libssl-1_1-x64.dll\" \"$$replace(OUT_PWD, /, \\)\\release\\\" > nul 2>&1)
-            break()
-        }
-        exists($$OPENSSL_PATH/libcrypto-1_1.dll) {
-            message("Found OpenSSL (32-bit) at $$OPENSSL_PATH")
-            QMAKE_POST_LINK += $$quote(cmd /c copy /y \"$$replace(OPENSSL_PATH, /, \\)\\libcrypto-1_1.dll\" \"$$replace(OUT_PWD, /, \\)\\release\\\" > nul 2>&1)
-            QMAKE_POST_LINK += && $$quote(cmd /c copy /y \"$$replace(OPENSSL_PATH, /, \\)\\libssl-1_1.dll\" \"$$replace(OUT_PWD, /, \\)\\release\\\" > nul 2>&1)
-            break()
-        }
-    }
-}
+DISTFILES += \
+    script/amd_x86_64/build_release.sh \
+    script/windows_x86_64/TaskDispatcher.iss \
+    script/windows_x86_64/build_release.bat \
+    script/windows_x86_64/README.txt \
+    README.md
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin

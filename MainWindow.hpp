@@ -64,8 +64,7 @@ private:
       {"企业微信", "com.tencent.wework"},
       {"飞书", "com.ss.android.lark"},
       {"QQ", "com.tencent.mobileqq"},
-      {"微信", "com.tencent.mm"},
-      {"抖音", "com.ss.android.ugc.aweme"}};
+      {"微信", "com.tencent.mm"}};
 
   // ====== 系统托盘 ======
   void setupSystemTray();
