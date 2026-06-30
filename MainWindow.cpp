@@ -174,7 +174,7 @@ void MainWindow::setupSystemTray() {
   // 创建托盘图标
   trayIcon = new QSystemTrayIcon(this);
   trayIcon->setIcon(QIcon(":/application.png"));
-  trayIcon->setToolTip("TaskDispatcher");
+  trayIcon->setToolTip("任务调度器");
 
   // 创建托盘右键菜单
   trayMenu = new QMenu(this);
@@ -564,7 +564,7 @@ void MainWindow::onActionTestEmailClicked() {
 
   MailSender::get()->sendAttachmentEmail(
       "测试邮件",
-      "这是一封来自 TaskDispatcher 的测试邮件，邮件发送功能配置成功！", bytes);
+      "这是一封来自【任务调度器】的测试邮件，邮件发送功能配置成功！", bytes);
 }
 
 void MainWindow::onActionTextWxClicked() {
@@ -1034,15 +1034,15 @@ void MainWindow::sendMessageToUser(const QByteArray bytes) {
       Logger::Tag("MainWindow").w("企业微信未配置");
       return;
     }
-    WxMessageSender::get()->sendImageMessageAsync("截屏结果通知", bytes);
+    // WxMessageSender::get()->sendImageMessageAsync("截屏结果通知", bytes);
   } else {
     QJsonObject obj = ConfigStore::get().load("emailConfig");
     if (obj.isEmpty()) {
       Logger::Tag("MainWindow").w("邮箱信息未配置");
       return;
     }
-    MailSender::get()->sendAttachmentEmail("截屏结果通知",
-                                           "结果见附件，请注意查收", bytes);
+    // MailSender::get()->sendAttachmentEmail("截屏结果通知",
+    //                                        "结果见附件，请注意查收", bytes);
   }
 }
 
@@ -1051,7 +1051,7 @@ void MainWindow::changeEvent(QEvent *event) {
     if (isMinimized()) {
       hide();
       if (trayIcon) {
-        trayIcon->showMessage("TaskDispatcher", "程序已最小化到系统托盘",
+        trayIcon->showMessage("任务调度器", "程序已最小化到系统托盘",
                               QSystemTrayIcon::Information, 2000);
       }
       event->ignore();
@@ -1065,7 +1065,7 @@ void MainWindow::closeEvent(QCloseEvent *event) {
   // 关闭窗口时最小化到托盘，而非直接退出
   hide();
   if (trayIcon) {
-    trayIcon->showMessage("TaskDispatcher", "程序仍在后台运行",
+    trayIcon->showMessage("任务调度器", "程序仍在后台运行",
                           QSystemTrayIcon::Information, 2000);
   }
   event->ignore();
