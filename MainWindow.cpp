@@ -700,7 +700,11 @@ void MainWindow::slotTaskExecuted(const QDateTime &actualTime, qint32 taskId,
   }
 
   const auto packageName = obj["targetApp"].toString();
-  // 1.先打开目标APP
+
+  // 记录待杀死的包名，供后续自动流程使用
+  pendingKillPackage = packageName;
+
+  // 通过 adb shell monkey 打开目标APP
   processExecutorPtr->openTargetApp(packageName);
 
   Logger::Tag("MainWindow")
@@ -708,7 +712,9 @@ void MainWindow::slotTaskExecuted(const QDateTime &actualTime, qint32 taskId,
             taskId, actualTime.toString("HH:mm:ss").toStdString().c_str(),
             current, total);
 
-  // TODO  2.开始计时，时长为delay，倒计时结束通过adb截屏，在等15s通过adb杀掉目标应用
+  // 后续步骤由信号驱动：
+  //   slotOpenAppSuccess → 等待 delay 秒 → 截屏
+  //   slotScreenCaptured  → 等待 15s → 杀掉目标APP
 }
 
 void MainWindow::slotNextTaskScheduled(int nextIndex,
@@ -776,19 +782,60 @@ void MainWindow::slotScreenCaptured(const QString &filePath) {
       .dFmt("截屏已保存: %s", filePath.toStdString().c_str());
   const auto bytes = ImageProcessor::get()->compressImage(filePath);
   sendMessageToUser(bytes);
+
+  // 如果是任务自动流程，等待 15s 后杀掉目标APP
+  if (!pendingKillPackage.isEmpty()) {
+    const QString package = pendingKillPackage;
+    pendingKillPackage.clear();
+
+    Logger::Tag("MainWindow")
+        .dFmt("截屏完成，等待 15 秒后杀掉应用: %s",
+              package.toStdString().c_str());
+
+    QTimer::singleShot(15000, this, [this, package]() {
+      Logger::Tag("MainWindow")
+          .dFmt("15 秒到，杀死应用: %s", package.toStdString().c_str());
+      processExecutorPtr->killTargetApp(package);
+    });
+  }
 }
 
 void MainWindow::slotCaptureFailed(const QString &message) {
   ToastWidget::showError(this, message);
   sendMessageToUser("截屏失败通知", message);
+  pendingKillPackage.clear();
 }
 
 void MainWindow::slotOpenAppSuccess(const QString &packageName) {
   ToastWidget::showInfo(this, QString("应用已打开: %1").arg(packageName));
+  if (pendingKillPackage.isEmpty()) {
+    Logger::Tag("MainWindow")
+        .dFmt("手动打开应用: %s，不触发后续截屏+杀App流程",
+              packageName.toStdString().c_str());
+    return;
+  }
+
+  // 读取 delay 配置，延迟后截屏
+  int delaySeconds = 30; // 默认 30 秒
+  {
+    const QJsonObject saved = ConfigStore::get().load("delayTimeConfig");
+    if (saved.contains("seconds")) {
+      delaySeconds = saved["seconds"].toInt();
+    }
+  }
+
+  Logger::Tag("MainWindow")
+      .dFmt("应用已打开，等待 %d 秒后截屏...", delaySeconds);
+
+  QTimer::singleShot(delaySeconds * 1000, this, [this]() {
+    Logger::Tag("MainWindow").i("延迟时间到，开始截屏");
+    processExecutorPtr->captureScreen();
+  });
 }
 
 void MainWindow::slotOpenAppFailed(const QString &message) {
   ToastWidget::showError(this, message);
+  pendingKillPackage.clear();
 }
 
 void MainWindow::updateCountDown() {
