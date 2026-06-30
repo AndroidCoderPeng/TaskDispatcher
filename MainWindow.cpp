@@ -185,7 +185,7 @@ void MainWindow::onActionImportDataClicked() {
 
   QFile file(filePath);
   if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-    ToastWidget::showError(this, "无法打开文件：" + file.errorString());
+    QMessageBox::critical(this, "错误", "无法打开文件：" + file.errorString());
     return;
   }
 
@@ -195,13 +195,14 @@ void MainWindow::onActionImportDataClicked() {
   QJsonParseError parseError;
   const QJsonDocument doc = QJsonDocument::fromJson(data, &parseError);
   if (parseError.error != QJsonParseError::NoError) {
-    ToastWidget::showError(
-        this, QString("JSON 解析失败：%1").arg(parseError.errorString()));
+    QMessageBox::critical(this, "错误",
+                          "JSON 解析失败：" + parseError.errorString());
     return;
   }
 
   if (!doc.isObject()) {
-    ToastWidget::showError(this, "文件格式不正确，根节点必须是 JSON 对象");
+    QMessageBox::critical(this, "错误",
+                          "文件格式不正确，根节点必须是 JSON 对象");
     return;
   }
 
@@ -250,7 +251,7 @@ void MainWindow::onActionExportDataClicked() {
   const auto configs = ConfigStore::get().loadAll();
   const auto tasks = TaskStore::get().loadAll();
   if (configs.isEmpty() && tasks.isEmpty()) {
-    ToastWidget::showWarning(this, "没有数据可以导出");
+    QMessageBox::information(this, "提示", "没有数据可以导出");
     return;
   }
 
@@ -263,7 +264,7 @@ void MainWindow::onActionExportDataClicked() {
   QFile file(filePath);
   if (!file.open(QIODevice::WriteOnly | QIODevice::Text |
                  QIODevice::Truncate)) {
-    ToastWidget::showError(this, "无法打开文件：" + file.errorString());
+    QMessageBox::critical(this, "无法打开文件：" + file.errorString());
     return;
   }
 
@@ -458,7 +459,7 @@ void MainWindow::onActionOpenTargetAppClicked() {
   // 发送 websocket 消息给客户端，通知客户端打开目标应用
   const auto observer = WebSocketObserver::get();
   if (!observer->isServerRunning()) {
-    ToastWidget::showWarning(this, "通信服务未开启，请先开启通信服务");
+    QMessageBox::warning(this, "警告", "通信服务未开启，请先开启通信服务");
     return;
   }
   observer->sendMessage(WsProtocol::Action::OPEN_APP);
@@ -480,7 +481,7 @@ void MainWindow::onActionKillTargetAppClicked() {
 void MainWindow::onActionTestEmailClicked() {
   QJsonObject obj = ConfigStore::get().load("emailConfig");
   if (obj.isEmpty()) {
-    ToastWidget::showWarning(this, "请先配置邮箱信息");
+    QMessageBox::warning(this, "警告", "请先配置邮箱信息");
     return;
   }
 
@@ -508,7 +509,7 @@ void MainWindow::onActionTestEmailClicked() {
 void MainWindow::onActionTextWxClicked() {
   QJsonObject obj = ConfigStore::get().load("wxConfig");
   if (obj.isEmpty()) {
-    ToastWidget::showWarning(this, "请先配置企业微信信息");
+    QMessageBox::warning(this, "警告", "请先配置企业微信信息");
     return;
   }
 
@@ -559,14 +560,14 @@ void MainWindow::onExecuteTaskButtonClicked() {
 
   // 检查通信服务状态
   if (!WebSocketObserver::get()->isServerRunning()) {
-    ToastWidget::showWarning(this, "通信服务未开启，请先开启通信服务");
+    QMessageBox::warning(this, "警告", "通信服务未开启，请先开启通信服务");
     return;
   }
 
   // 检查是否有任务
   const auto tasks = TaskStore::get().loadAll();
   if (tasks.isEmpty()) {
-    ToastWidget::showWarning(this, "没有任务可以执行，请先添加任务");
+    QMessageBox::warning(this, "警告", "没有任务可以执行，请先添加任务");
     return;
   }
 
@@ -719,11 +720,11 @@ void MainWindow::slotDataReceived(const QString &message) {
 }
 
 void MainWindow::slotSyncSuccess(const QString &message) {
-  ToastWidget::showInfo(this, message);
+  QMessageBox::information(this, "提示", message);
 }
 
 void MainWindow::slotSyncError(const QString &error) {
-  ToastWidget::showError(this, error);
+  QMessageBox::critical(this, "错误", error);
 }
 
 void MainWindow::slotTaskExecuted(const QDateTime &actualTime, qint32 taskId,
