@@ -23,8 +23,7 @@ void ProcessExecutor::captureScreen() {
   QProcess *process = new QProcess(this);
   connect(
       process, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
-      this,
-      [this, process, filePath](int exitCode, QProcess::ExitStatus exitStatus) {
+      this, [this, process, filePath](int exitCode, QProcess::ExitStatus) {
         process->deleteLater();
 
         if (exitCode != 0) {

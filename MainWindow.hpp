@@ -6,7 +6,6 @@
 #include <QMenu>
 #include <QSystemTrayIcon>
 
-#include "GlobalDefinition.hpp"
 #include "ProcessExecutor.hpp"
 #include "TaskExecutor.hpp"
 
