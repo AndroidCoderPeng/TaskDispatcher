@@ -54,7 +54,6 @@ MainWindow::MainWindow(QWidget *parent)
 
   const int taskCount = TaskStore::get().loadAll().size();
   Logger::Tag("MainWindow").dFmt("Loaded %d tasks from database", taskCount);
-  ui->taskCountLabel->setText(QString::number(taskCount));
   updateTaskListWidget();
 
   // 从 ConfigStore 恢复通知方式选中状态
@@ -242,8 +241,6 @@ void MainWindow::onActionImportDataClicked() {
   }
 
   // 刷新界面
-  const int totalTasks = TaskStore::get().loadAll().size();
-  ui->taskCountLabel->setText(QString::number(totalTasks));
   updateTaskListWidget();
 
   ToastWidget::showInfo(
@@ -545,8 +542,6 @@ void MainWindow::onAddTaskButtonClicked() {
       const qint32 newId = TaskStore::get().add(result.second);
       if (newId > 0) {
         // 刷新列表和任务数量
-        const int taskCount = TaskStore::get().loadAll().size();
-        ui->taskCountLabel->setText(QString::number(taskCount));
         updateTaskListWidget();
       }
     }
@@ -782,18 +777,14 @@ void MainWindow::updateCountDown() {
 void MainWindow::resetTaskState() {
   Logger::Tag("MainWindow").i("开始重置任务状态...");
 
-  // 1. 停止当前执行器
   if (taskExecutorPtr && taskExecutorPtr->isRunning()) {
     taskExecutorPtr->stop();
     Logger::Tag("MainWindow").i("已停止任务执行器");
   }
 
-  // 2. 获取任务列表并更新UI显示
-  QList<Task> allTasks = TaskStore::get().loadAll();
   updateTaskListWidget();
-  ui->taskCountLabel->setText(QString::number(allTasks.size()));
 
-  // 4. 重新启动任务执行器，开始新的一天任务
+  // 重新启动任务执行器，开始新的一天任务
   if (taskExecutorPtr) {
     startTaskExecutor();
     Logger::Tag("MainWindow").i("任务执行器已重新启动，开始新的一天任务");

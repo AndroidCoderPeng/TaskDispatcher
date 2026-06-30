@@ -194,7 +194,7 @@ void TaskExecutor::stop() {
   timer.stop();
   running = false;
   currentIndex = 0;
-  Logger::Tag("TaskExecutor").d("调度器已停止");
+  Logger::Tag("TaskExecutor").i("调度器已停止");
 }
 
 bool TaskExecutor::isRunning() const { return running; }
@@ -220,10 +220,6 @@ void TaskExecutor::executeNextTask() {
 
   // 发送任务执行信号到 MainWindow
   emit signalTaskExecuted(actualTime, taskId, progress, totalTasks);
-
-  Logger::Tag("TaskExecutor")
-      .dFmt("执行任务 %d/%d (ID=%d), 实际时间=%s", progress, totalTasks, taskId,
-            actualTime.toString("HH:mm:ss").toStdString().c_str());
 
   // 移动到下一个任务
   currentIndex++;
