@@ -16,10 +16,13 @@
 #include "WxMessageSender.hpp"
 #include "WxSettingDialog.hpp"
 
+#include <QApplication>
+#include <QCloseEvent>
 #include <QCoreApplication>
 #include <QDesktopServices>
 #include <QDialog>
 #include <QDir>
+#include <QEvent>
 #include <QFile>
 #include <QFileDialog>
 #include <QHBoxLayout>
@@ -67,6 +70,9 @@ MainWindow::MainWindow(QWidget *parent)
       ui->emailRadioButton->setChecked(true);
     }
   }
+
+  // 初始化系统托盘
+  setupSystemTray();
 
   // 连接顶部菜单信号和槽
   connect(ui->actionImportData, &QAction::triggered, this,
@@ -164,6 +170,48 @@ MainWindow::MainWindow(QWidget *parent)
 }
 
 /// —————————— 内部私有函数 ——————————
+void MainWindow::setupSystemTray() {
+  // 创建托盘图标
+  trayIcon = new QSystemTrayIcon(this);
+  trayIcon->setIcon(QIcon(":/application.png"));
+  trayIcon->setToolTip("TaskDispatcher");
+
+  // 创建托盘右键菜单
+  trayMenu = new QMenu(this);
+  QAction *showAction = trayMenu->addAction("显示主窗口");
+  QAction *quitAction = trayMenu->addAction("退出");
+
+  connect(showAction, &QAction::triggered, this, [this]() {
+    showNormal();
+    activateWindow();
+  });
+
+  connect(quitAction, &QAction::triggered, this, [this]() {
+    // 停止任务执行器
+    if (taskExecutorPtr && taskExecutorPtr->isRunning()) {
+      taskExecutorPtr->stop();
+    }
+    trayIcon->hide();
+    QApplication::quit();
+  });
+
+  trayIcon->setContextMenu(trayMenu);
+
+  // 双击托盘图标显示主窗口
+  connect(trayIcon, &QSystemTrayIcon::activated, this,
+          &MainWindow::onTrayIconActivated);
+
+  trayIcon->show();
+}
+
+void MainWindow::onTrayIconActivated(QSystemTrayIcon::ActivationReason reason) {
+  if (reason == QSystemTrayIcon::DoubleClick ||
+      reason == QSystemTrayIcon::Trigger) {
+    showNormal();
+    activateWindow();
+  }
+}
+
 void MainWindow::onActionImportDataClicked() {
   const QString filePath =
       QFileDialog::getOpenFileName(this, "导入数据", "", "配置文件 (*.json)");
@@ -559,8 +607,8 @@ void MainWindow::onActionAboutTriggered() {
                      "<p><b>邮箱：</b><a "
                      "href='mailto:AndroidCoderPeng'>290677893@qq.com</a></p>"
                      "<hr>"
-                     "<p>支持 Windows / Linux / Mac "
-                     "平台。Mac平台需自行下载Qt编译链编译</p>");
+                     "<p>支持 Windows / Linux / Mac 平台。"
+                     "<p>Mac平台需自行下载Qt编译链编译。</p>");
 }
 
 void MainWindow::onExecuteTaskButtonClicked() {
@@ -996,6 +1044,31 @@ void MainWindow::sendMessageToUser(const QByteArray bytes) {
     MailSender::get()->sendAttachmentEmail("截屏结果通知",
                                            "结果见附件，请注意查收", bytes);
   }
+}
+
+void MainWindow::changeEvent(QEvent *event) {
+  if (event->type() == QEvent::WindowStateChange) {
+    if (isMinimized()) {
+      hide();
+      if (trayIcon) {
+        trayIcon->showMessage("TaskDispatcher", "程序已最小化到系统托盘",
+                              QSystemTrayIcon::Information, 2000);
+      }
+      event->ignore();
+      return;
+    }
+  }
+  QMainWindow::changeEvent(event);
+}
+
+void MainWindow::closeEvent(QCloseEvent *event) {
+  // 关闭窗口时最小化到托盘，而非直接退出
+  hide();
+  if (trayIcon) {
+    trayIcon->showMessage("TaskDispatcher", "程序仍在后台运行",
+                          QSystemTrayIcon::Information, 2000);
+  }
+  event->ignore();
 }
 
 MainWindow::~MainWindow() { delete ui; }

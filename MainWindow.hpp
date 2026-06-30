@@ -3,6 +3,8 @@
 
 #include <QListWidget>
 #include <QMainWindow>
+#include <QMenu>
+#include <QSystemTrayIcon>
 
 #include "GlobalDefinition.hpp"
 #include "ProcessExecutor.hpp"
@@ -20,6 +22,10 @@ class MainWindow : public QMainWindow {
 public:
   explicit MainWindow(QWidget *parent = nullptr);
   ~MainWindow() override;
+
+protected:
+  void changeEvent(QEvent *event) override;
+  void closeEvent(QCloseEvent *event) override;
 
 public slots:
   void slotSyncSuccess(const QString &message);
@@ -46,6 +52,8 @@ public slots:
 
 private:
   Ui::MainWindow *ui;
+  QSystemTrayIcon *trayIcon = nullptr;
+  QMenu *trayMenu = nullptr;
   TaskExecutor *taskExecutorPtr = nullptr;
   ProcessExecutor *processExecutorPtr = nullptr;
 
@@ -59,6 +67,11 @@ private:
       {"QQ", "com.tencent.mobileqq"},
       {"微信", "com.tencent.mm"},
       {"抖音", "com.ss.android.ugc.aweme"}};
+
+  // ====== 系统托盘 ======
+  void setupSystemTray();
+
+  void onTrayIconActivated(QSystemTrayIcon::ActivationReason reason);
 
   // ====== 菜单栏 ======
   void onActionImportDataClicked();
@@ -88,10 +101,12 @@ private:
   void onActionProjectSiteTriggered();
   void onActionAboutTriggered();
 
+  // ====== 按钮 ======
   void onExecuteTaskButtonClicked();
   void onAddTaskButtonClicked();
   void onOpenSocketButtonClicked();
 
+  // ====== 其他 ======
   void onNotifyMethodChanged();
 
   void showListWidgetContextMenu(const QPoint &pos);
