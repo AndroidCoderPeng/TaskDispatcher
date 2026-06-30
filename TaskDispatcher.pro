@@ -17,6 +17,7 @@ SOURCES += \
     ChinaHolidayManager.cpp \
     ConfigStore.cpp \
     EmailSettingDialog.cpp \
+    ImageProcessor.cpp \
     Logger.cpp \
     DispatcherApplication.cpp \
     MailSender.cpp \
@@ -38,6 +39,7 @@ HEADERS += \
     ConfigStore.hpp \
     EmailSettingDialog.hpp \
     GlobalDefinition.hpp \
+    ImageProcessor.hpp \
     Logger.hpp \
     DispatcherApplication.hpp \
     MailSender.hpp \

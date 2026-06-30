@@ -72,9 +72,34 @@ void MailSender::sendEmail(const QString &subject, const QString &body) {
 
 void MailSender::sendAttachmentEmail(const QString &subject,
                                      const QString &body,
-                                     const QString &attachmentPath) {
-  // TODO
-  Logger::Tag("MailSender").w("Attachment email sending not implemented yet");
+                                     const QByteArray bytes) {
+  if (!loadEmailConfig()) {
+    Logger::Tag("MailSender").e("Email config not found or incomplete");
+    return;
+  }
+
+  if (bytes.isEmpty()) {
+    Logger::Tag("MailSender").e("Attachment data is empty");
+    return;
+  }
+
+  if (socketPtr->state() != QAbstractSocket::UnconnectedState) {
+    Logger::Tag("MailSender").w("Socket is busy, aborting previous connection");
+    socketPtr->abort();
+  }
+
+  pendingSubject = subject;
+  pendingBody = body;
+  pendingAttachmentData = bytes;
+  pendingAttachmentFileName = "image.png";
+  smtpStep = 0;
+  multiLineBuffer.clear();
+
+  Logger::Tag("MailSender")
+      .dFmt("Connecting to %s:%d (with attachment, %d bytes)", SMTP_HOST,
+            SMTP_PORT, bytes.size());
+  socketPtr->connectToHostEncrypted(SMTP_HOST, SMTP_PORT);
+  timeoutTimerPtr->start(SMTP_TIMEOUT_MS);
 }
 
 void MailSender::onConnected() {
@@ -175,7 +200,14 @@ void MailSender::handleSmtpResponse(int code) {
   {
     smtpStep = 8;
     expectedCode = 250;
-    QString mailContent = buildMailContent(pendingSubject, pendingBody);
+    QString mailContent;
+    if (!pendingAttachmentData.isEmpty()) {
+      mailContent = buildAttachmentMailContent(pendingSubject, pendingBody,
+                                               pendingAttachmentData,
+                                               pendingAttachmentFileName);
+    } else {
+      mailContent = buildMailContent(pendingSubject, pendingBody);
+    }
     Logger::Tag("MailSender").d("Sending mail content...");
     const QStringList lines = mailContent.split("\r\n");
     for (const QString &l : lines) {
@@ -188,6 +220,8 @@ void MailSender::handleSmtpResponse(int code) {
     }
     socketPtr->write("\r\n.\r\n");
     socketPtr->flush();
+    // 带附件时数据量大，重置超时给服务端处理时间
+    timeoutTimerPtr->start(SMTP_TIMEOUT_MS);
   } break;
 
   case 8: // 邮件内容已接收 (250)
@@ -199,6 +233,8 @@ void MailSender::handleSmtpResponse(int code) {
   case 9: // QUIT 响应 (221)
     timeoutTimerPtr->stop();
     socketPtr->disconnectFromHost();
+    pendingAttachmentData.clear();
+    pendingAttachmentFileName.clear();
     Logger::Tag("MailSender").i("Email sent successfully!");
     break;
 
@@ -218,6 +254,8 @@ void MailSender::fail(const QString &reason) {
   if (socketPtr->state() != QAbstractSocket::UnconnectedState) {
     socketPtr->disconnectFromHost();
   }
+  pendingAttachmentData.clear();
+  pendingAttachmentFileName.clear();
   Logger::Tag("MailSender")
       .eFmt("Send failed: %s", reason.toStdString().c_str());
 }
@@ -247,6 +285,52 @@ QString MailSender::buildMailContent(const QString &subject,
 
   // 邮件正文内容使用 Base64 编码
   content += body.toUtf8().toBase64() + "\r\n";
+
+  return content;
+}
+
+QString MailSender::buildAttachmentMailContent(const QString &subject,
+                                               const QString &body,
+                                               const QByteArray &attachmentData,
+                                               const QString &fileName) const {
+  QString from = config.senderEmail.trimmed();
+  QString to = config.receiverEmail.trimmed();
+
+  const QString boundary = "----=_TaskDispatcher_Mixed_0001";
+
+  QString content;
+
+  // 邮件头部
+  content += "From: " + from + "\r\n";
+  content += "To: " + to + "\r\n";
+  content += "Subject: =?UTF-8?B?" + subject.toUtf8().toBase64() + "?=\r\n";
+  content += "MIME-Version: 1.0\r\n";
+  content += "Content-Type: multipart/mixed; boundary=\"" + boundary + "\"\r\n";
+  content += "\r\n";
+
+  // ===== 纯文本正文部分 =====
+  content += "--" + boundary + "\r\n";
+  content += "Content-Type: text/plain; charset=UTF-8\r\n";
+  content += "Content-Transfer-Encoding: base64\r\n";
+  content += "\r\n";
+  content += body.toUtf8().toBase64() + "\r\n";
+
+  // ===== 附件部分 =====
+  content += "--" + boundary + "\r\n";
+  content += "Content-Type: image/png; name=\"" + fileName + "\"\r\n";
+  content +=
+      "Content-Disposition: attachment; filename=\"" + fileName + "\"\r\n";
+  content += "Content-Transfer-Encoding: base64\r\n";
+  content += "\r\n";
+
+  // 附件 base64 编码，每 76 字符换行（MIME 规范）
+  const QByteArray base64Data = attachmentData.toBase64();
+  for (int i = 0; i < base64Data.size(); i += 76) {
+    content += QString::fromUtf8(base64Data.mid(i, 76)) + "\r\n";
+  }
+
+  // 结束边界
+  content += "--" + boundary + "--\r\n";
 
   return content;
 }

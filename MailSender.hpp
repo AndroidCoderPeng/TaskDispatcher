@@ -20,7 +20,7 @@ public:
   void sendEmail(const QString &subject, const QString &body);
 
   void sendAttachmentEmail(const QString &subject, const QString &body,
-                           const QString &attachmentPath);
+                           const QByteArray bytes);
 
 private slots:
   void onConnected();
@@ -36,6 +36,11 @@ private:
   bool loadEmailConfig();
 
   QString buildMailContent(const QString &subject, const QString &body) const;
+
+  QString buildAttachmentMailContent(const QString &subject,
+                                     const QString &body,
+                                     const QByteArray &attachmentData,
+                                     const QString &fileName) const;
 
   // 发送 SMTP 命令并等待响应码
   void sendCommand(const QString &cmd);
@@ -54,11 +59,13 @@ private:
   EmailConfig config;
   QString pendingSubject;
   QString pendingBody;
+  QByteArray pendingAttachmentData;
+  QString pendingAttachmentFileName;
   int smtpStep = 0;
   int expectedCode = 0;
   QString multiLineBuffer;
 
-  static constexpr int SMTP_TIMEOUT_MS = 15000;
+  static constexpr int SMTP_TIMEOUT_MS = 60000;
   static constexpr const char *SMTP_HOST = "smtp.qq.com";
   static constexpr int SMTP_PORT = 465;
 };

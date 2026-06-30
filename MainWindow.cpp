@@ -5,6 +5,7 @@
 #include "ChinaHolidayManager.hpp"
 #include "ConfigStore.hpp"
 #include "EmailSettingDialog.hpp"
+#include "ImageProcessor.hpp"
 #include "Logger.hpp"
 #include "MailSender.hpp"
 #include "ProcessExecutor.hpp"
@@ -482,9 +483,26 @@ void MainWindow::onActionTestEmailClicked() {
     ToastWidget::showWarning(this, "请先配置邮箱信息");
     return;
   }
-  MailSender::get()->sendEmail(
+
+  const QString filePath =
+      QFileDialog::getOpenFileName(this, "选择附件", "", "图片 (*.png)");
+  if (filePath.isEmpty()) {
+    Logger::Tag("MainWindow").i("select image canceled");
+    return;
+  }
+
+  Logger::Tag("MainWindow")
+      .dFmt("selected image: %s", filePath.toStdString().c_str());
+
+  const auto start = QTime::currentTime();
+  const auto bytes = ImageProcessor::get()->compressImage(filePath, 80);
+  const auto end = QTime::currentTime();
+  Logger::Tag("MainWindow")
+      .dFmt("compress image cost %d ms", start.msecsTo(end));
+
+  MailSender::get()->sendAttachmentEmail(
       "测试邮件",
-      "这是一封来自 TaskDispatcher 的测试邮件，邮件发送功能配置成功！");
+      "这是一封来自 TaskDispatcher 的测试邮件，邮件发送功能配置成功！", bytes);
 }
 
 void MainWindow::onActionTextWxClicked() {
