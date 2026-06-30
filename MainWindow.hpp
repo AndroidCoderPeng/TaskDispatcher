@@ -93,6 +93,7 @@ private:
 
   void onActionWakeUpDeviceClicked();
   void onActionCaptureScreenClicked();
+  void onActionScreenOffClicked();
   void onActionOpenTargetAppClicked();
   void onActionKillTargetAppClicked();
 

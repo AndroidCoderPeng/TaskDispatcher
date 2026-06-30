@@ -5,8 +5,6 @@
 #include <QProcess>
 #include <QString>
 
-class QProcess;
-
 class ProcessExecutor : public QObject {
   Q_OBJECT
 public:
@@ -19,6 +17,8 @@ public:
   void openTargetApp(const QString &packageName);
 
   void killTargetApp(const QString &packageName);
+
+  void screenOff();
 
 signals:
   void signalDeviceWokenUp();

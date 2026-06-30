@@ -257,6 +257,7 @@
                 </property>
                 <addaction name="actionWakeUpDevice"/>
                 <addaction name="actionCaptureScreen"/>
+                <addaction name="actionScreenOff"/>
                 <addaction name="separator"/>
                 <addaction name="actionOpenTargetApp"/>
                 <addaction name="actionKillTargetApp"/>
@@ -391,6 +392,11 @@
         <action name="actionCaptureScreen">
             <property name="text">
                 <string>截屏</string>
+            </property>
+        </action>
+        <action name="actionScreenOff">
+            <property name="text">
+                <string>息屏</string>
             </property>
         </action>
         <action name="actionOpenTargetApp">

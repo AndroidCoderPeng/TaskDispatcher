@@ -187,3 +187,11 @@ void ProcessExecutor::killTargetApp(const QString &packageName) {
           process, &QProcess::deleteLater);
   process->start("adb", {"shell", "am", "force-stop", packageName});
 }
+
+void ProcessExecutor::screenOff() {
+  QProcess *process = new QProcess(this);
+  connect(process,
+          QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
+          process, &QProcess::deleteLater);
+  process->start("adb", {"shell", "input", "keyevent", "KEYCODE_SLEEP"});
+}

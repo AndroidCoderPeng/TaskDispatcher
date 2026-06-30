@@ -111,6 +111,8 @@ MainWindow::MainWindow(QWidget *parent)
           &MainWindow::onActionWakeUpDeviceClicked);
   connect(ui->actionCaptureScreen, &QAction::triggered, this,
           &MainWindow::onActionCaptureScreenClicked);
+  connect(ui->actionScreenOff, &QAction::triggered, this,
+          &MainWindow::onActionScreenOffClicked);
   connect(ui->actionOpenTargetApp, &QAction::triggered, this,
           &MainWindow::onActionOpenTargetAppClicked);
   connect(ui->actionKillTargetApp, &QAction::triggered, this,
@@ -518,6 +520,8 @@ void MainWindow::onActionWakeUpDeviceClicked() {
 void MainWindow::onActionCaptureScreenClicked() {
   processExecutorPtr->captureScreen();
 }
+
+void MainWindow::onActionScreenOffClicked() { processExecutorPtr->screenOff(); }
 
 void MainWindow::onActionOpenTargetAppClicked() {
   QJsonObject obj = ConfigStore::get().load("targetAppConfig");
@@ -1019,15 +1023,18 @@ void MainWindow::sendMessageToUser(const QString &title,
       Logger::Tag("MainWindow").w("企业微信未配置");
       return;
     }
-    // WxMessageSender::get()->sendMessageAsync(title, message);
+    WxMessageSender::get()->sendMessageAsync(title, message);
   } else {
     QJsonObject obj = ConfigStore::get().load("emailConfig");
     if (obj.isEmpty()) {
       Logger::Tag("MainWindow").w("邮箱信息未配置");
       return;
     }
-    // MailSender::get()->sendEmail(title, message);
+    MailSender::get()->sendEmail(title, message);
   }
+
+  // 通知完用户后关闭屏幕，节省电量
+  processExecutorPtr->screenOff();
 }
 
 void MainWindow::sendMessageToUser(const QByteArray bytes) {
@@ -1040,16 +1047,19 @@ void MainWindow::sendMessageToUser(const QByteArray bytes) {
       Logger::Tag("MainWindow").w("企业微信未配置");
       return;
     }
-    // WxMessageSender::get()->sendImageMessageAsync("截屏结果通知", bytes);
+    WxMessageSender::get()->sendImageMessageAsync("截屏结果通知", bytes);
   } else {
     QJsonObject obj = ConfigStore::get().load("emailConfig");
     if (obj.isEmpty()) {
       Logger::Tag("MainWindow").w("邮箱信息未配置");
       return;
     }
-    // MailSender::get()->sendAttachmentEmail("截屏结果通知",
-    //                                        "结果见附件，请注意查收", bytes);
+    MailSender::get()->sendAttachmentEmail("截屏结果通知",
+                                           "结果见附件，请注意查收", bytes);
   }
+
+  // 通知完用户后关闭屏幕，节省电量
+  processExecutorPtr->screenOff();
 }
 
 void MainWindow::changeEvent(QEvent *event) {
