@@ -151,7 +151,6 @@ MainWindow::MainWindow(QWidget *parent)
   connect(taskExecutorPtr, &TaskExecutor::signalHolidaySkipped, this,
           &MainWindow::slotHolidaySkipped);
 
-
   // 创建进程执行器并连接信号
   processExecutorPtr = new ProcessExecutor(this);
   connect(processExecutorPtr, &ProcessExecutor::signalScreenCaptured, this,
@@ -623,7 +622,8 @@ void MainWindow::updateTaskListWidget() {
     return a.scheduledTime < b.scheduledTime;
   });
 
-  for (const Task &task : tasks) {
+  // 使用 qAsConst 避免 range-loop detach 警告
+  for (const Task &task : qAsConst(tasks)) {
     QListWidgetItem *item = new QListWidgetItem(ui->listWidget);
     item->setData(Qt::UserRole, task.id);
 
