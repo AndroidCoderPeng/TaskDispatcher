@@ -495,7 +495,7 @@ void MainWindow::onActionTestEmailClicked() {
       .dFmt("selected image: %s", filePath.toStdString().c_str());
 
   const auto start = QTime::currentTime();
-  const auto bytes = ImageProcessor::get()->compressImage(filePath, 80);
+  const auto bytes = ImageProcessor::get()->compressImage(filePath, 75);
   const auto end = QTime::currentTime();
   Logger::Tag("MainWindow")
       .dFmt("compress image cost %d ms", start.msecsTo(end));
@@ -511,9 +511,24 @@ void MainWindow::onActionTextWxClicked() {
     ToastWidget::showWarning(this, "请先配置企业微信信息");
     return;
   }
-  WxMessageSender::get()->sendMessageAsync(
-      "测试企业微信消息",
-      "这是一条来自 TaskDispatcher 的企业微信消息，消息发送功能配置成功！");
+
+  const QString filePath =
+      QFileDialog::getOpenFileName(this, "选择附件", "", "图片 (*.png)");
+  if (filePath.isEmpty()) {
+    Logger::Tag("MainWindow").i("select image canceled");
+    return;
+  }
+
+  Logger::Tag("MainWindow")
+      .dFmt("selected image: %s", filePath.toStdString().c_str());
+
+  const auto start = QTime::currentTime();
+  const auto bytes = ImageProcessor::get()->compressImage(filePath, 75);
+  const auto end = QTime::currentTime();
+  Logger::Tag("MainWindow")
+      .dFmt("compress image cost %d ms", start.msecsTo(end));
+
+  WxMessageSender::get()->sendImageMessageAsync("测试企业微信消息", bytes);
 }
 
 void MainWindow::onActionProjectSiteTriggered() {

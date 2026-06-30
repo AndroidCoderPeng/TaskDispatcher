@@ -15,21 +15,15 @@ public:
 
   void sendMessageAsync(const QString &title, const QString &content);
 
-  void sendImageMessageAsync(const QString &title, const QString &description,
-                             const QString &imagePath);
+  void sendImageMessageAsync(const QString &title, const QByteArray bytes);
 
 private:
   explicit WxMessageSender(QObject *parent = nullptr);
 
-  QNetworkAccessManager *_networkManagerPtr;
-
   static constexpr const char *WX_WEBHOOK_URL =
       "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=%1";
 
-  void sendMessage(const QString &title, const QString &content);
-
-  void sendImageMessage(const QString &title, const QString &description,
-                        const QString &imagePath);
+  QNetworkAccessManager *_networkManagerPtr;
 };
 
 #endif // WXMESSAGESENDER_HPP
