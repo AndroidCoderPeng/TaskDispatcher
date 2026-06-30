@@ -107,6 +107,8 @@ MainWindow::MainWindow(QWidget *parent)
   connect(ui->actionSyncData, &QAction::triggered, this,
           &MainWindow::onActionSyncDataClicked);
 
+  connect(ui->actionWakeUpDevice, &QAction::triggered, this,
+          &MainWindow::onActionWakeUpDeviceClicked);
   connect(ui->actionCaptureScreen, &QAction::triggered, this,
           &MainWindow::onActionCaptureScreenClicked);
   connect(ui->actionOpenTargetApp, &QAction::triggered, this,
@@ -507,6 +509,10 @@ void MainWindow::onActionDarkThemeToggled(bool checked) {
 
 void MainWindow::onActionSyncDataClicked() {
   ChinaHolidayManager::get()->updateChinaHolidayData();
+}
+
+void MainWindow::onActionWakeUpDeviceClicked() {
+  processExecutorPtr->wakeUpDevice();
 }
 
 void MainWindow::onActionCaptureScreenClicked() {

@@ -255,6 +255,7 @@
                 <property name="title">
                     <string>指令(&amp;C)</string>
                 </property>
+                <addaction name="actionWakeUpDevice"/>
                 <addaction name="actionCaptureScreen"/>
                 <addaction name="separator"/>
                 <addaction name="actionOpenTargetApp"/>
@@ -380,6 +381,11 @@
         <action name="actionSyncData">
             <property name="text">
                 <string>同步节假日数据</string>
+            </property>
+        </action>
+        <action name="actionWakeUpDevice">
+            <property name="text">
+                <string>亮屏</string>
             </property>
         </action>
         <action name="actionCaptureScreen">

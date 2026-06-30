@@ -91,6 +91,7 @@ private:
 
   void onActionSyncDataClicked();
 
+  void onActionWakeUpDeviceClicked();
   void onActionCaptureScreenClicked();
   void onActionOpenTargetAppClicked();
   void onActionKillTargetAppClicked();

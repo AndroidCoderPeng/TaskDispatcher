@@ -12,6 +12,8 @@ class ProcessExecutor : public QObject {
 public:
   explicit ProcessExecutor(QObject *parent = nullptr);
 
+  void wakeUpDevice();
+
   void captureScreen();
 
   void openTargetApp(const QString &packageName);
@@ -19,6 +21,8 @@ public:
   void killTargetApp(const QString &packageName);
 
 signals:
+  void signalDeviceWokenUp();
+
   void signalScreenCaptured(const QString &filePath);
 
   void signalCaptureFailed(const QString &message);
