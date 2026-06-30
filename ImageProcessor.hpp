@@ -10,7 +10,7 @@ public:
   ImageProcessor(const ImageProcessor &) = delete;
   ImageProcessor &operator=(const ImageProcessor &) = delete;
 
-  QByteArray compressImage(const QString path, int quality);
+  QByteArray compressImage(const QString path, int maxBytes = 2 * 1024 * 1024);
 
 private:
   ImageProcessor();

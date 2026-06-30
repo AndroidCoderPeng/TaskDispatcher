@@ -495,7 +495,7 @@ void MainWindow::onActionTestEmailClicked() {
       .dFmt("selected image: %s", filePath.toStdString().c_str());
 
   const auto start = QTime::currentTime();
-  const auto bytes = ImageProcessor::get()->compressImage(filePath, 75);
+  const auto bytes = ImageProcessor::get()->compressImage(filePath);
   const auto end = QTime::currentTime();
   Logger::Tag("MainWindow")
       .dFmt("compress image cost %d ms", start.msecsTo(end));
@@ -523,7 +523,7 @@ void MainWindow::onActionTextWxClicked() {
       .dFmt("selected image: %s", filePath.toStdString().c_str());
 
   const auto start = QTime::currentTime();
-  const auto bytes = ImageProcessor::get()->compressImage(filePath, 75);
+  const auto bytes = ImageProcessor::get()->compressImage(filePath);
   const auto end = QTime::currentTime();
   Logger::Tag("MainWindow")
       .dFmt("compress image cost %d ms", start.msecsTo(end));
