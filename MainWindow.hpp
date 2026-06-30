@@ -51,6 +51,10 @@ public slots:
 
   void slotCaptureFailed(const QString &message);
 
+  void slotOpenAppSuccess(const QString &packageName);
+
+  void slotOpenAppFailed(const QString &message);
+
 private:
   Ui::MainWindow *ui;
   TaskExecutor *taskExecutorPtr = nullptr;

@@ -164,6 +164,10 @@ MainWindow::MainWindow(QWidget *parent)
           &MainWindow::slotScreenCaptured);
   connect(processExecutorPtr, &ProcessExecutor::signalCaptureFailed, this,
           &MainWindow::slotCaptureFailed);
+  connect(processExecutorPtr, &ProcessExecutor::signalOpenAppSuccess, this,
+          &MainWindow::slotOpenAppSuccess);
+  connect(processExecutorPtr, &ProcessExecutor::signalOpenAppFailed, this,
+          &MainWindow::slotOpenAppFailed);
 }
 
 /// —————————— 外部调用函数 ——————————
@@ -456,13 +460,16 @@ void MainWindow::onActionCaptureScreenClicked() {
 }
 
 void MainWindow::onActionOpenTargetAppClicked() {
-  // 发送 websocket 消息给客户端，通知客户端打开目标应用
-  const auto observer = WebSocketObserver::get();
-  if (!observer->isServerRunning()) {
-    QMessageBox::warning(this, "警告", "通信服务未开启，请先开启通信服务");
-    return;
+  bool ok = false;
+  const QString inputValue =
+      QInputDialog::getText(this, "打开应用", "请输入想要打开的APP名字或者包名",
+                            QLineEdit::Normal, QString(), &ok);
+
+  if (ok && !inputValue.isEmpty()) {
+    // 先查映射表，找不到则直接作为包名使用
+    const QString packageName = nameToPackage.value(inputValue, inputValue);
+    processExecutorPtr->openTargetApp(packageName);
   }
-  observer->sendMessage(WsProtocol::Action::OPEN_APP);
 }
 
 void MainWindow::onActionKillTargetAppClicked() {
@@ -809,6 +816,14 @@ void MainWindow::slotCaptureFailed(const QString &message) {
   sendMessageToUser("截屏失败通知", message);
 }
 
+void MainWindow::slotOpenAppSuccess(const QString &packageName) {
+  ToastWidget::showInfo(this, QString("应用已打开: %1").arg(packageName));
+}
+
+void MainWindow::slotOpenAppFailed(const QString &message) {
+  ToastWidget::showError(this, message);
+}
+
 void MainWindow::updateCountDown() {
   QJsonObject resetTaskConfig = ConfigStore::get().load("resetTaskConfig");
   // 未设置则默认 0 点
@@ -922,7 +937,11 @@ void MainWindow::stopTask() {
 
 void MainWindow::sendMessageToUser(const QString &title,
                                    const QString &message) {
-  Logger::Tag("MainWindow").dBox().add(title).add(message).print();
+  Logger::Tag("MainWindow")
+      .box()
+      .add(title.toStdString().c_str())
+      .add(message.toStdString().c_str())
+      .print();
   const QJsonObject saved = ConfigStore::get().load("notifyMethodConfig");
   const QString method =
       saved.contains("method") ? saved["method"].toString() : QString();
