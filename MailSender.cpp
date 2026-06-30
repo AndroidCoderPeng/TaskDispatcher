@@ -60,7 +60,7 @@ void MailSender::sendEmail(const QString &subject, const QString &body) {
     socketPtr->abort();
   }
 
-  pendingSubject = subject;
+  pendingSubject = subject == nullptr ? config.emailTitle : subject;
   pendingBody = body;
   smtpStep = 0;
   multiLineBuffer.clear();
@@ -88,7 +88,7 @@ void MailSender::sendAttachmentEmail(const QString &subject,
     socketPtr->abort();
   }
 
-  pendingSubject = subject;
+  pendingSubject = subject == nullptr ? config.emailTitle : subject;
   pendingBody = body;
   pendingAttachmentData = bytes;
   pendingAttachmentFileName = "image.png";

@@ -690,7 +690,7 @@ void MainWindow::onCustomAction(const QListWidgetItem *item,
 }
 
 void MainWindow::slotNoClient() {
-  ToastWidget::showWarning(this, "没有客户端连接到通信服务");
+  sendMessageToUser("客户端断开连接通知", "请注意：客户端与本地服务断开！");
 }
 
 void MainWindow::slotServerStateChanged(const WebSocketState &state) {
@@ -704,19 +704,14 @@ void MainWindow::slotServerStateChanged(const WebSocketState &state) {
     ui->socketStateView->setText("通信服务已关闭");
     ui->openSocketButton->setText("开启通信服务");
     ui->ipv4Box->setEnabled(true);
+    sendMessageToUser("服务关闭通知", "通信服务已关闭，请记得自行手动打卡！");
   }
 }
 
 void MainWindow::slotDataReceived(const QString &message) {
-  // 响应客户端的消息，处理后续逻辑
+  // TODO 响应客户端的消息，处理后续逻辑
   Logger::Tag("MainWindow")
       .dFmt("Received message: %s", message.toStdString().c_str());
-  const auto observer = WebSocketObserver::get();
-  if (!observer->isServerRunning()) {
-    ToastWidget::showWarning(this, "通信服务未开启，请先开启通信服务");
-    return;
-  }
-  observer->sendMessage(WsProtocol::Action::OPEN_APP);
 }
 
 void MainWindow::slotSyncSuccess(const QString &message) {
@@ -729,9 +724,17 @@ void MainWindow::slotSyncError(const QString &error) {
 
 void MainWindow::slotTaskExecuted(const QDateTime &actualTime, qint32 taskId,
                                   int current, int total) {
+  const auto observer = WebSocketObserver::get();
+  if (!observer->isServerRunning()) {
+    ToastWidget::showWarning(this, "通信服务未开启，请先开启通信服务");
+    sendMessageToUser("任务执行失败通知", "通信服务未开启，请先开启通信服务");
+    return;
+  }
+  observer->sendMessage(WsProtocol::Action::OPEN_APP);
   Logger::Tag("MainWindow")
       .dFmt("任务已执行: %d/%d (ID=%d), 实际时间=%s", current, total, taskId,
             actualTime.toString("HH:mm:ss").toStdString().c_str());
+  // TODO 等delay时间到，通过adb截屏，再通过adb杀掉目标应用
 }
 
 void MainWindow::slotNextTaskScheduled(int nextIndex,
@@ -762,6 +765,8 @@ void MainWindow::slotDayFinished() {
       widget->setActualTime(QTime());
     }
   }
+  sendMessageToUser("好消息",
+                    "当天所有任务执行完毕，休息一下吧~~祝你生活愉快！");
 }
 
 void MainWindow::slotHolidaySkipped() {
@@ -774,6 +779,7 @@ void MainWindow::slotHolidaySkipped() {
       widget->setActualTime(QTime());
     }
   }
+  sendMessageToUser("普天同庆", "今天不上班~，出去玩玩吧！");
 }
 
 void MainWindow::slotCycleReset() {
@@ -787,17 +793,20 @@ void MainWindow::slotCycleReset() {
       widget->setActualTime(QTime());
     }
   }
+  sendMessageToUser("slotCycleReset-任务重置通知",
+                    "任务重置成功，新一天开始！");
 }
 
 void MainWindow::slotScreenCaptured(const QString &filePath) {
   Logger::Tag("MainWindow")
       .dFmt("截屏已保存: %s", filePath.toStdString().c_str());
-  ToastWidget::showInfo(this, "截屏已保存: " + filePath);
+  const auto bytes = ImageProcessor::get()->compressImage(filePath);
+  sendMessageToUser(bytes);
 }
 
 void MainWindow::slotCaptureFailed(const QString &message) {
-  MailSender::get()->sendEmail("截屏失败", message);
   ToastWidget::showError(this, message);
+  sendMessageToUser("截屏失败通知", message);
 }
 
 void MainWindow::updateCountDown() {
@@ -838,6 +847,8 @@ void MainWindow::resetTaskState() {
     startTaskExecutor();
     Logger::Tag("MainWindow").i("任务执行器已重新启动，开始新的一天任务");
     ToastWidget::showInfo(this, "任务状态已重置，新的一天任务已开始");
+    sendMessageToUser("resetTaskState-任务重置通知",
+                      "任务重置成功，新一天开始！");
   }
 }
 
@@ -888,6 +899,7 @@ void MainWindow::startTaskExecutor() {
             randomEnabled ? "是" : "否", randomMinutes,
             skipHoliday ? "是" : "否",
             resetTime.toString("HH:mm").toStdString().c_str());
+  sendMessageToUser("任务启动通知", "任务执行器已启动，开始新的一天任务");
 }
 
 void MainWindow::stopTask() {
@@ -905,6 +917,51 @@ void MainWindow::stopTask() {
     if (widget) {
       widget->setActualTime(QTime());
     }
+  }
+}
+
+void MainWindow::sendMessageToUser(const QString &title,
+                                   const QString &message) {
+  Logger::Tag("MainWindow").dBox().add(title).add(message).print();
+  const QJsonObject saved = ConfigStore::get().load("notifyMethodConfig");
+  const QString method =
+      saved.contains("method") ? saved["method"].toString() : QString();
+  if (method == "wx") {
+    QJsonObject obj = ConfigStore::get().load("wxConfig");
+    if (obj.isEmpty()) {
+      Logger::Tag("MainWindow").w("企业微信未配置");
+      return;
+    }
+    // WxMessageSender::get()->sendMessageAsync(title, message);
+  } else {
+    QJsonObject obj = ConfigStore::get().load("emailConfig");
+    if (obj.isEmpty()) {
+      Logger::Tag("MainWindow").w("邮箱信息未配置");
+      return;
+    }
+    // MailSender::get()->sendEmail(title, message);
+  }
+}
+
+void MainWindow::sendMessageToUser(const QByteArray bytes) {
+  const QJsonObject saved = ConfigStore::get().load("notifyMethodConfig");
+  const QString method =
+      saved.contains("method") ? saved["method"].toString() : QString();
+  if (method == "wx") {
+    QJsonObject obj = ConfigStore::get().load("wxConfig");
+    if (obj.isEmpty()) {
+      Logger::Tag("MainWindow").w("企业微信未配置");
+      return;
+    }
+    WxMessageSender::get()->sendImageMessageAsync("截屏结果通知", bytes);
+  } else {
+    QJsonObject obj = ConfigStore::get().load("emailConfig");
+    if (obj.isEmpty()) {
+      Logger::Tag("MainWindow").w("邮箱信息未配置");
+      return;
+    }
+    MailSender::get()->sendAttachmentEmail("截屏结果通知",
+                                           "结果见附件，请注意查收", bytes);
   }
 }
 

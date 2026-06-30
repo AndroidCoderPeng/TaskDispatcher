@@ -110,5 +110,9 @@ private:
   void stopTask();
 
   void updateTaskListWidget();
+
+  void sendMessageToUser(const QString &title, const QString &message);
+
+  void sendMessageToUser(const QByteArray bytes);
 };
 #endif // MAINWINDOW_HPP
