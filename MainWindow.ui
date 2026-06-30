@@ -230,6 +230,8 @@
                 <property name="title">
                     <string>设置(&amp;S)</string>
                 </property>
+                <addaction name="actionTargetSetting"/>
+                <addaction name="separator"/>
                 <addaction name="actionEmailSetting"/>
                 <addaction name="actionWeWorkSetting"/>
                 <addaction name="separator"/>
@@ -296,6 +298,11 @@
             </property>
             <property name="shortcut">
                 <string>Ctrl+Q</string>
+            </property>
+        </action>
+        <action name="actionTargetSetting">
+            <property name="text">
+                <string>目标APP</string>
             </property>
         </action>
         <action name="actionEmailSetting">

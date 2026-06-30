@@ -76,6 +76,8 @@ MainWindow::MainWindow(QWidget *parent)
   connect(ui->actionExit, &QAction::triggered, this,
           &MainWindow::onActionCloseClicked);
 
+  connect(ui->actionTargetSetting, &QAction::triggered, this,
+          &MainWindow::onActionTargetSettingClicked);
   connect(ui->actionEmailSetting, &QAction::triggered, this,
           &MainWindow::onActionEmailSettingClicked);
   connect(ui->actionWeWorkSetting, &QAction::triggered, this,
@@ -295,6 +297,28 @@ void MainWindow::onActionCloseClicked() {
   }
 }
 
+void MainWindow::onActionTargetSettingClicked() {
+  QString defaultValue = "";
+  QJsonObject saved = ConfigStore::get().load("targetAppConfig");
+  if (saved.contains("targetApp")) {
+    defaultValue = saved["targetApp"].toString();
+  }
+
+  bool ok = false;
+  const QString inputValue = QInputDialog::getText(
+      this, "设置目标APP", "请输入想要打开的APP名字或者包名", QLineEdit::Normal,
+      defaultValue, &ok);
+
+  if (ok && !inputValue.isEmpty()) {
+    // 先查映射表，找不到则直接作为包名使用
+    const QString packageName = nameToPackage.value(inputValue, inputValue);
+    QJsonObject obj;
+    obj["targetApp"] = packageName;
+    ConfigStore::get().save("targetAppConfig", obj);
+    ToastWidget::showInfo(this, "目标APP配置已保存");
+  }
+}
+
 void MainWindow::onActionEmailSettingClicked() {
   EmailSettingDialog dialog(this);
   if (dialog.exec() == QDialog::Accepted) {
@@ -329,7 +353,6 @@ void MainWindow::onActionWeWorkSettingClicked() {
   }
 }
 
-// 通过wss发消息给APP唤起目标应用，等delay时间到，通过adb截屏，再通过adb杀掉目标应用
 void MainWindow::onActionDelayTimeSettingClicked() {
   int defaultValue = 30; // 默认 30 秒
   QJsonObject saved = ConfigStore::get().load("delayTimeConfig");
@@ -445,29 +468,29 @@ void MainWindow::onActionCaptureScreenClicked() {
 }
 
 void MainWindow::onActionOpenTargetAppClicked() {
-  bool ok = false;
-  const QString inputValue =
-      QInputDialog::getText(this, "打开应用", "请输入想要打开的APP名字或者包名",
-                            QLineEdit::Normal, QString(), &ok);
-
-  if (ok && !inputValue.isEmpty()) {
-    // 先查映射表，找不到则直接作为包名使用
-    const QString packageName = nameToPackage.value(inputValue, inputValue);
-    processExecutorPtr->openTargetApp(packageName);
+  QJsonObject obj = ConfigStore::get().load("targetAppConfig");
+  if (obj.isEmpty()) {
+    QMessageBox::warning(this, "警告", "请先配置目标APP");
+    return;
   }
+
+  const auto packageName = obj["targetApp"].toString();
+  Logger::Tag("MainWindow")
+      .dFmt("Opening target app: %s", packageName.toStdString().c_str());
+  processExecutorPtr->openTargetApp(packageName);
 }
 
 void MainWindow::onActionKillTargetAppClicked() {
-  bool ok = false;
-  const QString inputValue =
-      QInputDialog::getText(this, "关闭应用", "请输入想要关闭的APP名字或者包名",
-                            QLineEdit::Normal, QString(), &ok);
-
-  if (ok && !inputValue.isEmpty()) {
-    // 先查映射表，找不到则直接作为包名使用
-    const QString packageName = nameToPackage.value(inputValue, inputValue);
-    processExecutorPtr->killTargetApp(packageName);
+  QJsonObject obj = ConfigStore::get().load("targetAppConfig");
+  if (obj.isEmpty()) {
+    QMessageBox::warning(this, "警告", "请先配置目标APP");
+    return;
   }
+
+  const auto packageName = obj["targetApp"].toString();
+  Logger::Tag("MainWindow")
+      .dFmt("Killing target app: %s", packageName.toStdString().c_str());
+  processExecutorPtr->killTargetApp(packageName);
 }
 
 void MainWindow::onActionTestEmailClicked() {

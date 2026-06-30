@@ -64,6 +64,7 @@ private:
   void onActionExportDataClicked();
   void onActionCloseClicked();
 
+  void onActionTargetSettingClicked();
   void onActionEmailSettingClicked();
   void onActionWeWorkSettingClicked();
   void onActionDelayTimeSettingClicked();
