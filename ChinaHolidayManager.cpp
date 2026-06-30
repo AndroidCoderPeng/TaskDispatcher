@@ -112,7 +112,7 @@ void ChinaHolidayManager::handleHolidayData() {
   cache["workdays"] = root.value("workdays");
   ConfigStore::get().save("holidayConfig", cache);
 
-  emit signalSyncSuccess("节假日数据同步完成");
+  emit signalSyncSuccess("节假日数据同步完成（网络）");
 }
 
 void ChinaHolidayManager::parseJsonToMemory(const QJsonObject &root) {
@@ -155,7 +155,7 @@ void ChinaHolidayManager::tryLoadFromCache() {
   }
 
   parseJsonToMemory(cache);
-  Logger::Tag("ChinaHolidayManager").i("Loaded holidays from cache");
+  emit signalSyncSuccess("节假日数据同步完成（缓存）");
 }
 
 bool ChinaHolidayManager::isHoliday(const QDate &date) const {

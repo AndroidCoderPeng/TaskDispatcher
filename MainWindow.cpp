@@ -264,7 +264,7 @@ void MainWindow::onActionExportDataClicked() {
   QFile file(filePath);
   if (!file.open(QIODevice::WriteOnly | QIODevice::Text |
                  QIODevice::Truncate)) {
-    QMessageBox::critical(this, "无法打开文件：" + file.errorString());
+    QMessageBox::critical(this, "错误", "无法打开文件：" + file.errorString());
     return;
   }
 
