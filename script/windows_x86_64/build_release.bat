@@ -11,6 +11,7 @@ set WINDEPLOYQT=%QT_DIR%\bin\windeployqt.exe
 set PLUGIN_DIR=%QT_DIR%\plugins
 
 set PROJECT_DIR=D:\Code\QtProjects\TaskDispatcher
+set ADB_DIR=%PROJECT_DIR%\tool\windows
 set BUILD_DIR=%PROJECT_DIR%\build\Desktop_Qt_5_15_2_MinGW_64_bit_Release\release
 set OUTPUT_EXE=TaskDispatcher.exe
 
@@ -52,6 +53,11 @@ cd /d "%TEMP_DIR%"
 
 
 echo.
+echo Copy ADB environment to temporary directory.
+echo.
+xcopy "%ADB_DIR%\*" "%TEMP_DIR%\tool\windows\" /E /I /Y
+
+echo.
 echo Deploy Qt dependencies using windeployqt.
 echo.
 "%WINDEPLOYQT%" "%TEMP_DIR%\%OUTPUT_EXE%"
@@ -60,6 +66,9 @@ echo.
 echo.
 echo Copy MinGW runtime libraries to temporary directory.
 echo.
+copy "%QT_DIR%\bin\libgcc_s_seh-1.dll" "%TEMP_DIR%\"
+copy "%QT_DIR%\bin\libstdc++-6.dll" "%TEMP_DIR%\"
+copy "%QT_DIR%\bin\libwinpthread-1.dll" "%TEMP_DIR%\"
 copy "%QT_DIR%\bin\D3Dcompiler_47.dll" "%TEMP_DIR%\"
 copy "%QT_DIR%\bin\libEGL.dll" "%TEMP_DIR%\"
 copy "%QT_DIR%\bin\libGLESv2.dll" "%TEMP_DIR%\"

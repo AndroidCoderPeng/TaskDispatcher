@@ -7,19 +7,19 @@
                 <x>0</x>
                 <y>0</y>
                 <width>450</width>
-                <height>405</height>
+                <height>410</height>
             </rect>
         </property>
         <property name="minimumSize">
             <size>
                 <width>450</width>
-                <height>405</height>
+                <height>410</height>
             </size>
         </property>
         <property name="maximumSize">
             <size>
                 <width>450</width>
-                <height>405</height>
+                <height>410</height>
             </size>
         </property>
         <widget class="QWidget" name="centralWidget">
