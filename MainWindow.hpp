@@ -98,6 +98,7 @@ private:
 
   void onActionTestEmailClicked();
   void onActionTextWxClicked();
+  void onActionQuestionClicked();
   void onActionProjectSiteTriggered();
   void onActionAboutTriggered();
 

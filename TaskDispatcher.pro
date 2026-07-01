@@ -69,6 +69,7 @@ DISTFILES += \
     script/windows_x86_64/TaskDispatcher.iss \
     script/windows_x86_64/build_release.bat \
     script/windows_x86_64/README.txt \
+    html/index.html \
     README.md
 
 # Default rules for deployment.

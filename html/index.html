@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5, user-scalable=yes">
+    <title>小米 MIUI / HyperOS ADB input 限制 · Q&amp;A</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #f5f7fb;
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 24px 16px;
+            line-height: 1.6;
+            color: #1e293b;
+        }
+
+        .qa-card {
+            max-width: 880px;
+            width: 100%;
+            background-color: white;
+            border-radius: 28px;
+            box-shadow: 0 20px 40px -12px rgba(0, 10, 30, 0.15), 0 4px 18px rgba(0, 0, 0, 0.05);
+            overflow: hidden;
+            transition: all 0.2s ease;
+        }
+
+        .qa-header {
+            background: linear-gradient(145deg, #0d2137, #162d50);
+            padding: 28px 32px 22px 32px;
+            color: white;
+        }
+
+        .qa-header h1 {
+            font-weight: 600;
+            font-size: 1.9rem;
+            letter-spacing: -0.02em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .qa-header h1 small {
+            font-size: 1rem;
+            font-weight: 400;
+            opacity: 0.75;
+            margin-left: 8px;
+        }
+
+        .qa-header .badge-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px 16px;
+            margin-top: 12px;
+            font-size: 0.85rem;
+            opacity: 0.9;
+        }
+
+        .badge-group span {
+            background: rgba(255, 255, 255, 0.08);
+            padding: 4px 14px;
+            border-radius: 80px;
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .qa-body {
+            padding: 26px 32px 34px;
+        }
+
+        .qa-item {
+            border-bottom: 1px solid #eef2f6;
+            padding: 22px 0 20px;
+        }
+
+        .qa-item:first-of-type {
+            padding-top: 0;
+        }
+
+        .qa-item:last-of-type {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+        .question {
+            font-weight: 550;
+            font-size: 1.13rem;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            margin-bottom: 10px;
+            color: #0b1c33;
+        }
+
+        .question::before {
+            content: "❓";
+            font-weight: 300;
+            opacity: 0.65;
+            margin-right: 2px;
+        }
+
+        .answer {
+            padding-left: 36px;
+            color: #2c3e58;
+        }
+
+        .answer p {
+            margin-bottom: 12px;
+        }
+
+        .answer ul, .answer ol {
+            margin: 8px 0 12px 16px;
+        }
+
+        .answer li {
+            margin-bottom: 6px;
+        }
+
+        .code-block {
+            background: #f1f5fa;
+            border-radius: 14px;
+            padding: 14px 18px;
+            font-family: 'SF Mono', 'Fira Code', monospace;
+            font-size: 0.88rem;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-break: break-word;
+            border: 1px solid #e2eaf2;
+            margin: 12px 0 6px;
+            color: #0a2647;
+        }
+
+        .inline-code {
+            background: #edf2f9;
+            padding: 2px 8px;
+            border-radius: 30px;
+            font-family: 'SF Mono', monospace;
+            font-size: 0.82rem;
+            color: #10355e;
+            border: 1px solid #dce5ef;
+            white-space: nowrap;
+        }
+
+        .table-wrap {
+            overflow-x: auto;
+            margin: 12px 0 6px;
+            border-radius: 16px;
+            border: 1px solid #e8edf4;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.92rem;
+            background: white;
+        }
+
+        th {
+            background: #f0f5fc;
+            text-align: left;
+            padding: 11px 16px;
+            font-weight: 530;
+            color: #15345c;
+            border-bottom: 1px solid #dde5f0;
+        }
+
+        td {
+            padding: 11px 16px;
+            border-bottom: 1px solid #ecf1f8;
+            vertical-align: top;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        .warn-note {
+            background: #fff8e7;
+            border-left: 5px solid #fbbf24;
+            padding: 14px 18px;
+            border-radius: 14px;
+            margin: 14px 0 8px;
+            color: #624b1a;
+            font-size: 0.93rem;
+        }
+
+        .tip-note {
+            background: #e9f3fe;
+            border-left: 5px solid #3b82f6;
+            padding: 14px 18px;
+            border-radius: 14px;
+            margin: 14px 0 8px;
+            color: #164863;
+            font-size: 0.93rem;
+        }
+
+        .footer-meta {
+            margin-top: 20px;
+            font-size: 0.78rem;
+            color: #64748b;
+            text-align: right;
+            border-top: 1px dashed #dce2eb;
+            padding-top: 20px;
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+        }
+
+        @media (max-width: 640px) {
+            .qa-header {
+                padding: 22px 18px;
+            }
+
+            .qa-body {
+                padding: 18px 16px 24px;
+            }
+
+            .answer {
+                padding-left: 10px;
+            }
+
+            .question::before {
+                content: "❓";
+                margin-right: 4px;
+            }
+
+            .qa-header h1 {
+                font-size: 1.6rem;
+            }
+
+            .table-wrap {
+                font-size: 0.83rem;
+            }
+
+            .code-block {
+                font-size: 0.79rem;
+                padding: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="qa-card">
+    <div class="qa-header">
+        <h1>
+            🔒 MIUI / HyperOS ADB 限制
+            <small>Q&amp;A</small>
+        </h1>
+        <div class="badge-group">
+            <span>小米 / Redmi</span>
+            <span>adb shell input 被拦截</span>
+            <span>INJECT_EVENTS</span>
+            <span>安全设置</span>
+        </div>
+    </div>
+    <div class="qa-body">
+
+        <!-- Q1 -->
+        <div class="qa-item">
+            <div class="question">为什么我的小米手机执行 <span class="inline-code">adb shell input tap</span> 没反应或报错？
+            </div>
+            <div class="answer">
+                <p>MIUI 和 HyperOS 出于安全考虑，<strong>默认禁止 ADB 向系统注入输入事件</strong>（缺少 <code>INJECT_EVENTS</code>
+                    权限）。即使 ADB 连接正常，<span class="inline-code">input tap</span> / <span
+                            class="inline-code">swipe</span> / <span class="inline-code">keyevent</span> / <span
+                            class="inline-code">text</span> 也会被系统拦截，表现为无响应或抛出
+                    <code>SecurityException</code>。</p>
+            </div>
+        </div>
+
+        <!-- Q2 -->
+        <div class="qa-item">
+            <div class="question">如何正确开启 ADB 模拟点击权限？（标准解法）</div>
+            <div class="answer">
+                <p>进入手机 <strong>设置 → 更多设置 → 开发者选项</strong>（若未开启：设置 → 我的设备 → 全部参数 →
+                    连续点击「OS版本/MIUI版本」7次）。开启以下三项：</p>
+                <ol>
+                    <li><strong>USB 调试</strong>（基础开关）</li>
+                    <li><strong>USB 调试（安全设置）</strong> ← 关键！允许 ADB 模拟点击/按键注入</li>
+                    <li><strong>USB 安装</strong>（如需用 ADB 安装 APK）</li>
+                </ol>
+                <div class="warn-note">
+                    ⚠️ 「USB 调试（安全设置）」和「USB 安装」通常<strong>要求登录小米账号且联网</strong>，部分机型还需插 SIM
+                    卡。选项可能置灰，需先登账号。
+                </div>
+                <p>开启后重新插拔 USB 线，选择 <strong>文件传输 (MTP)</strong> 模式，然后执行：</p>
+                <div class="code-block">adb kill-server && adb start-server<br>adb shell input tap 500 1000</div>
+                <p>确认是否有响应。如果仍然无效，继续看下一个问题。</p>
+            </div>
+        </div>
+
+        <!-- Q3 -->
+        <div class="qa-item">
+            <div class="question">已经开启了“USB 调试(安全设置)”还是不行，怎么办？</div>
+            <div class="answer">
+                <ul>
+                    <li><strong>屏幕需解锁</strong>：锁屏状态下 <code>input</code> 事件通常被忽略，请先点亮屏幕并解锁。
+                    </li>
+                    <li><strong>关闭 MIUI 优化</strong>：开发者选项页面最底部 → 关闭「启用 MIUI 优化」→ 重启手机（部分 MIUI
+                        14 以前机型需要此步骤）。
+                    </li>
+                    <li><strong>HyperOS 特例</strong>：逻辑同 MIUI，同样只需开「USB 调试(安全设置)」。若选项置灰，先登录小米账号。
+                    </li>
+                    <li><strong>撤销重授权</strong>：开发者选项 →「撤销 USB 调试授权」→ 重新连接电脑并点击允许。</li>
+                </ul>
+                <div class="tip-note">
+                    💡 如果依然失败，请检查 USB 连接模式是否为「文件传输 (MTP)」，部分旧版 MIUI 在「仅充电」模式下会限制 ADB
+                    功能。
+                </div>
+            </div>
+        </div>
+
+        <!-- Q4 -->
+        <div class="qa-item">
+            <div class="question">“USB 调试(安全设置)”选项是灰色的，点不了怎么办？</div>
+            <div class="answer">
+                <p>这是最常见的情况。原因和解决：</p>
+                <ul>
+                    <li><strong>必须登录小米账号</strong>（云服务账号），并且保持网络连接（Wi-Fi 或移动数据）。</li>
+                    <li><strong>部分机型要求插入 SIM 卡</strong>（尤其刚激活的手机或未插卡设备）。</li>
+                    <li>如果登录账号后仍然灰色，尝试重启手机、重新打开开发者选项页面。</li>
+                    <li>极少数情况需要等待几分钟让账号状态同步。</li>
+                </ul>
+                <div class="warn-note">
+                    ⚠️ 如果以上都无效，可能是系统版本策略限制。建议咨询小米官方客服或以最新官方公告为准。
+                </div>
+            </div>
+        </div>
+
+        <!-- Q5 -->
+        <div class="qa-item">
+            <div class="question">我的是 Redmi K60 / HyperOS 1.x，有什么特别需要注意的吗？</div>
+            <div class="answer">
+                <p>HyperOS 1.x 上的逻辑与 MIUI 基本一致。重点如下：</p>
+                <ul>
+                    <li>务必登录小米账号并联网，「USB 调试（安全设置）」才能亮起。</li>
+                    <li>如果之前开启过 MIUI 优化，建议保持开启（HyperOS 上关闭 MIUI 优化可能导致异常）。</li>
+                    <li>ADB 版本建议使用最新的 platform-tools（至少 34.0.0+）。</li>
+                    <li>部分 HyperOS 内测版对注入频率有限制，频繁 <code>input tap</code> 可能会被临时屏蔽，稍等几秒再试。
+                    </li>
+                </ul>
+                <p>如果方便提供具体的系统版本号（例如 HyperOS 1.0.2.0.UMKCNXM），可以给出更精确的建议。</p>
+            </div>
+        </div>
+
+        <!-- footer meta -->
+        <div class="footer-meta">
+            <span>📱 适用于 MIUI 13 / 14 / HyperOS</span>
+            <span>更新于 2026-07-01 · 仅供参考，以官方公告为准</span>
+        </div>
+    </div>
+</div>
+</body>
+</html>

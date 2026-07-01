@@ -122,6 +122,8 @@ MainWindow::MainWindow(QWidget *parent)
           &MainWindow::onActionTestEmailClicked);
   connect(ui->actionTextWx, &QAction::triggered, this,
           &MainWindow::onActionTextWxClicked);
+  connect(ui->actionQuestion, &QAction::triggered, this,
+          &MainWindow::onActionQuestionClicked);
   connect(ui->actionProjectSite, &QAction::triggered, this,
           &MainWindow::onActionProjectSiteTriggered);
   connect(ui->actionAbout, &QAction::triggered, this,
@@ -601,6 +603,11 @@ void MainWindow::onActionTextWxClicked() {
       .dFmt("compress image cost %d ms", start.msecsTo(end));
 
   WxMessageSender::get()->sendImageMessageAsync("测试企业微信消息", bytes);
+}
+
+void MainWindow::onActionQuestionClicked() {
+  QString htmlPath = QApplication::applicationDirPath() + "/html/index.html";
+  QDesktopServices::openUrl(QUrl::fromLocalFile(htmlPath));
 }
 
 void MainWindow::onActionProjectSiteTriggered() {

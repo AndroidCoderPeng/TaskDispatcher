@@ -269,6 +269,8 @@
                 <addaction name="actionTestEmail"/>
                 <addaction name="actionTextWx"/>
                 <addaction name="separator"/>
+                <addaction name="actionQuestion"/>
+                <addaction name="separator"/>
                 <addaction name="actionProjectSite"/>
                 <addaction name="actionAbout"/>
             </widget>
@@ -417,6 +419,11 @@
         <action name="actionTextWx">
             <property name="text">
                 <string>测试企业微信通知</string>
+            </property>
+        </action>
+        <action name="actionQuestion">
+            <property name="text">
+                <string>常见问题</string>
             </property>
         </action>
         <action name="actionProjectSite">
