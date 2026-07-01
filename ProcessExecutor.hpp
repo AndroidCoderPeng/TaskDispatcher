@@ -30,6 +30,9 @@ signals:
   void signalOpenAppSuccess(const QString &packageName);
 
   void signalOpenAppFailed(const QString &message);
+
+private:
+  QString adb();
 };
 
 #endif // PROCESSEXECUTOR_HPP

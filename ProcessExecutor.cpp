@@ -10,14 +10,25 @@
 #include <QTimer>
 #include <QtGlobal>
 
-ProcessExecutor::ProcessExecutor(QObject *parent) : QObject(parent) {}
+ProcessExecutor::ProcessExecutor(QObject *parent) : QObject(parent) {
+  Logger::Tag("ProcessExecutor")
+      .dFmt("Using adb path: %s", adb().toStdString().c_str());
+}
+
+QString ProcessExecutor::adb() {
+#ifdef Q_OS_WIN
+  return QCoreApplication::applicationDirPath() + "/tool/windows/adb.exe";
+#else
+  return "adb";
+#endif
+}
 
 void ProcessExecutor::wakeUpDevice() {
   // 亮屏
   QProcess *wake = new QProcess(this);
   connect(wake, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
           wake, &QProcess::deleteLater);
-  wake->start("adb", {"shell", "input", "keyevent", "KEYCODE_WAKEUP"});
+  wake->start(adb(), {"shell", "input", "keyevent", "KEYCODE_WAKEUP"});
   Logger::Tag("ProcessExecutor").d("Waking up device...");
 
   // 亮屏后延迟一下，等锁屏界面显示出来，再做上滑解锁
@@ -64,13 +75,13 @@ void ProcessExecutor::wakeUpDevice() {
                     QTimer::singleShot(
                         3000, this, [this]() { emit signalDeviceWokenUp(); });
                   });
-          swipe->start("adb", {"shell", "input", "swipe", QString::number(x),
+          swipe->start(adb(), {"shell", "input", "swipe", QString::number(x),
                                QString::number(yFrom), QString::number(x),
                                QString::number(yTo)});
           Logger::Tag("ProcessExecutor")
               .dFmt("Swipe unlock: %d,%d -> %d,%d", x, yFrom, x, yTo);
         });
-    wm->start("adb", {"shell", "wm", "size"});
+    wm->start(adb(), {"shell", "wm", "size"});
   });
 }
 
@@ -127,7 +138,7 @@ void ProcessExecutor::captureScreen() {
 
               emit signalScreenCaptured(filePath);
             });
-        process->start("adb", {"exec-out", "screencap", "-p"});
+        process->start(adb(), {"exec-out", "screencap", "-p"});
       });
 }
 
@@ -176,7 +187,7 @@ void ProcessExecutor::openTargetApp(const QString &packageName) {
               emit signalOpenAppSuccess(packageName);
             });
 
-        process->start("adb", args);
+        process->start(adb(), args);
       });
 }
 
@@ -185,7 +196,7 @@ void ProcessExecutor::killTargetApp(const QString &packageName) {
   connect(process,
           QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
           process, &QProcess::deleteLater);
-  process->start("adb", {"shell", "am", "force-stop", packageName});
+  process->start(adb(), {"shell", "am", "force-stop", packageName});
 }
 
 void ProcessExecutor::screenOff() {
@@ -193,5 +204,5 @@ void ProcessExecutor::screenOff() {
   connect(process,
           QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
           process, &QProcess::deleteLater);
-  process->start("adb", {"shell", "input", "keyevent", "KEYCODE_SLEEP"});
+  process->start(adb(), {"shell", "input", "keyevent", "KEYCODE_SLEEP"});
 }
