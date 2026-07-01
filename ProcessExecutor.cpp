@@ -6,7 +6,7 @@
 #include <QDateTime>
 #include <QDir>
 #include <QFile>
-#include <QRegularExpression>
+
 #include <QTimer>
 #include <QtGlobal>
 
@@ -35,37 +35,30 @@ void ProcessExecutor::wakeUpDevice() {
   QTimer::singleShot(1000, this, [this]() {
     // 获取屏幕分辨率
     QProcess *wm = new QProcess(this);
-    connect(
-        wm, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished), this,
-        [this, wm](int, QProcess::ExitStatus) {
-          wm->deleteLater();
-          const QString output = wm->readAllStandardOutput().trimmed();
-          Logger::Tag("ProcessExecutor")
-              .dFmt("Screen size: %s", output.toStdString().c_str());
+    connect(wm, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
+            this, [this, wm](int, QProcess::ExitStatus) {
+              wm->deleteLater();
+              const QString output = wm->readAllStandardOutput().trimmed();
+              Logger::Tag("ProcessExecutor")
+                  .dFmt("Screen size: %s", output.toStdString().c_str());
 
-          int width = 1080;
-          int height = 1920;
-          // 解析 "Physical size: 1080x2340" 或 "1080x2340"
-          const QStringList parts = output.split(QRegularExpression("[\\sx]+"));
-          for (const QString &part : parts) {
-            bool ok = false;
-            int val = part.toInt(&ok);
-            if (ok && val > 0) {
-              if (width == 1080 && val > 0) {
-                width = val;
-              } else if (height == 1920 && val > 0) {
-                height = val;
-                break;
+              int width = 720;
+              int height = 1280;
+              // 解析 "Physical size: 1080x2400" 或 "1080x2400"
+              const QString sizeStr = output.section(':', -1).trimmed();
+              const QStringList wh = sizeStr.split('x');
+              if (wh.size() == 2) {
+                width = wh[0].toInt();
+                height = wh[1].toInt();
               }
-            }
-          }
 
-          // 从底部向上滑动解锁
-          const int x = width / 2;
-          const int yFrom = height * 4 / 5;
-          const int yTo = height / 5;
-          QProcess *swipe = new QProcess(this);
-          connect(swipe,
+              // 从底部向上滑动解锁
+              const int x = width / 2;
+              const int yFrom = height * 4 / 5;
+              const int yTo = height / 5;
+              QProcess *swipe = new QProcess(this);
+              connect(
+                  swipe,
                   QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
                   this, [this, swipe](int, QProcess::ExitStatus) {
                     swipe->deleteLater();
@@ -75,12 +68,12 @@ void ProcessExecutor::wakeUpDevice() {
                     QTimer::singleShot(
                         3000, this, [this]() { emit signalDeviceWokenUp(); });
                   });
-          swipe->start(adb(), {"shell", "input", "swipe", QString::number(x),
-                               QString::number(yFrom), QString::number(x),
-                               QString::number(yTo)});
-          Logger::Tag("ProcessExecutor")
-              .dFmt("Swipe unlock: %d,%d -> %d,%d", x, yFrom, x, yTo);
-        });
+              swipe->start(adb(), {"shell", "input", "swipe",
+                                   QString::number(x), QString::number(yFrom),
+                                   QString::number(x), QString::number(yTo)});
+              Logger::Tag("ProcessExecutor")
+                  .dFmt("Swipe unlock: %d,%d -> %d,%d", x, yFrom, x, yTo);
+            });
     wm->start(adb(), {"shell", "wm", "size"});
   });
 }
