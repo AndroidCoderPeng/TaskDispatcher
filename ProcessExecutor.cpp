@@ -23,17 +23,11 @@ QString ProcessExecutor::adb() {
 #endif
 }
 
-void ProcessExecutor::checkConnectState(){
-  
-}
+void ProcessExecutor::checkConnectState() {}
 
-void ProcessExecutor::connectDevice(){
+void ProcessExecutor::connectDevice(const QString &deviceIp) {}
 
-}
-
-void ProcessExecutor::disconnectDevice(){
-  
-}
+void ProcessExecutor::disconnectDevice() {}
 
 void ProcessExecutor::wakeUpDevice() {
   // 亮屏
@@ -41,7 +35,7 @@ void ProcessExecutor::wakeUpDevice() {
   connect(wake, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
           wake, &QProcess::deleteLater);
   wake->start(adb(), {"shell", "input", "keyevent", "KEYCODE_WAKEUP"});
-  Logger::Tag("ProcessExecutor").d("Waking up device...");
+  Logger::Tag("ProcessExecutor").i("Waking up device...");
 
   // 亮屏后延迟一下，等锁屏界面显示出来，再做上滑解锁
   QTimer::singleShot(1000, this, [this]() {

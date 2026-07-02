@@ -12,7 +12,7 @@ class ProcessExecutor : public QObject {
 public:
   explicit ProcessExecutor(QObject *parent = nullptr);
 
-  void connectDevice();
+  void connectDevice(const QString &deviceIp);
 
   void disconnectDevice();
 

@@ -686,7 +686,13 @@ void MainWindow::onConnectDeviceButtonClicked() {
   if (currentState == ConnectState::Connected) {
     processExecutorPtr->disconnectDevice();
   } else {
-    processExecutorPtr->connectDevice();
+    bool ok = false;
+    const QString deviceIp =
+        QInputDialog::getText(this, "无线连接", "请输入手机的局域网IP地址",
+                              QLineEdit::Normal, QString(), &ok);
+    if (ok && !deviceIp.isEmpty()) {
+      processExecutorPtr->connectDevice(deviceIp);
+    }
   }
 }
 
