@@ -167,6 +167,8 @@ MainWindow::MainWindow(QWidget *parent)
 
   // 创建进程执行器并连接信号
   processExecutorPtr = new ProcessExecutor(this);
+  connect(processExecutorPtr, &ProcessExecutor::signalConnectStateChanged, this,
+          &MainWindow::slotConnectStateChanged);
   connect(processExecutorPtr, &ProcessExecutor::signalScreenCaptured, this,
           &MainWindow::slotScreenCaptured);
   connect(processExecutorPtr, &ProcessExecutor::signalCaptureFailed, this,
@@ -681,7 +683,11 @@ void MainWindow::onAddTaskButtonClicked() {
 }
 
 void MainWindow::onConnectDeviceButtonClicked() {
-  // processExecutorPtr->connectDevice();
+  if (currentState == ConnectState::Connected) {
+    processExecutorPtr->disconnectDevice();
+  } else {
+    processExecutorPtr->connectDevice();
+  }
 }
 
 void MainWindow::updateTaskListWidget() {
@@ -850,6 +856,19 @@ void MainWindow::slotHolidaySkipped() {
     }
   }
   sendMessageToUser("普天同庆", "今天不上班~，出去玩玩吧！");
+}
+
+void MainWindow::slotConnectStateChanged(ConnectState state) {
+  currentState = state;
+  if (state == ConnectState::Connected) {
+    ui->usbIconView->setPixmap(QPixmap(":/usb_connected.png"));
+    ui->usbStateView->setText("已连接");
+    ui->connectDeviceButton->setText("断开设备");
+  } else {
+    ui->usbStateView->setPixmap(QPixmap(":/usb_disconnected.png"));
+    ui->usbStateView->setText("未连接");
+    ui->connectDeviceButton->setText("连接设备");
+  }
 }
 
 void MainWindow::slotScreenCaptured(const QString &filePath) {

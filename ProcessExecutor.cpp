@@ -23,6 +23,18 @@ QString ProcessExecutor::adb() {
 #endif
 }
 
+void ProcessExecutor::checkConnectState(){
+  
+}
+
+void ProcessExecutor::connectDevice(){
+
+}
+
+void ProcessExecutor::disconnectDevice(){
+  
+}
+
 void ProcessExecutor::wakeUpDevice() {
   // 亮屏
   QProcess *wake = new QProcess(this);

@@ -4,6 +4,8 @@
 #include <QDateTime>
 #include <QString>
 
+enum class ConnectState { Disconnected, Connected, Connecting, ConnectFailed };
+
 struct EmailConfig {
   QString emailTitle;
   QString senderEmail;

@@ -5,10 +5,16 @@
 #include <QProcess>
 #include <QString>
 
+#include "GlobalDefinition.hpp"
+
 class ProcessExecutor : public QObject {
   Q_OBJECT
 public:
   explicit ProcessExecutor(QObject *parent = nullptr);
+
+  void connectDevice();
+
+  void disconnectDevice();
 
   void wakeUpDevice();
 
@@ -21,6 +27,8 @@ public:
   void screenOff();
 
 signals:
+  void signalConnectStateChanged(ConnectState state);
+
   void signalDeviceWokenUp();
 
   void signalScreenCaptured(const QString &filePath);
@@ -33,6 +41,8 @@ signals:
 
 private:
   QString adb();
+
+  void checkConnectState();
 };
 
 #endif // PROCESSEXECUTOR_HPP

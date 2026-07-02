@@ -37,6 +37,8 @@ public slots:
   void slotNextTaskScheduled(int nextIndex, const QDateTime &predictedTime,
                              qint32 nextTaskId);
 
+  void slotConnectStateChanged(ConnectState state);
+
   void slotDayFinished();
 
   void slotHolidaySkipped();
@@ -65,6 +67,7 @@ private:
       {"飞书", "com.ss.android.lark"},
       {"QQ", "com.tencent.mobileqq"},
       {"微信", "com.tencent.mm"}};
+  ConnectState currentState = ConnectState::Disconnected;
 
   // ====== 系统托盘 ======
   void setupSystemTray();
