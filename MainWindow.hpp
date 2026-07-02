@@ -105,7 +105,7 @@ private:
   // ====== 按钮 ======
   void onExecuteTaskButtonClicked();
   void onAddTaskButtonClicked();
-  void onOpenSocketButtonClicked();
+  void onConnectDeviceButtonClicked();
 
   // ====== 其他 ======
   void onNotifyMethodChanged();

@@ -134,6 +134,8 @@ MainWindow::MainWindow(QWidget *parent)
           &MainWindow::onExecuteTaskButtonClicked);
   connect(ui->addTaskButton, &QPushButton::clicked, this,
           &MainWindow::onAddTaskButtonClicked);
+  connect(ui->connectDeviceButton, &QPushButton::clicked, this,
+          &MainWindow::onConnectDeviceButtonClicked);
 
   // 连接 RadioButton 信号：通知方式切换
   connect(ui->emailRadioButton, &QRadioButton::toggled, this,
@@ -678,6 +680,10 @@ void MainWindow::onAddTaskButtonClicked() {
   }
 }
 
+void MainWindow::onConnectDeviceButtonClicked() {
+  // processExecutorPtr->connectDevice();
+}
+
 void MainWindow::updateTaskListWidget() {
   ui->listWidget->clear();
   QList<Task> tasks = TaskStore::get().loadAll();
@@ -1030,14 +1036,14 @@ void MainWindow::sendMessageToUser(const QString &title,
       Logger::Tag("MainWindow").w("企业微信未配置");
       return;
     }
-    WxMessageSender::get()->sendMessageAsync(title, message);
+    // WxMessageSender::get()->sendMessageAsync(title, message);
   } else {
     QJsonObject obj = ConfigStore::get().load("emailConfig");
     if (obj.isEmpty()) {
       Logger::Tag("MainWindow").w("邮箱信息未配置");
       return;
     }
-    MailSender::get()->sendEmail(title, message);
+    // MailSender::get()->sendEmail(title, message);
   }
 
   // 通知完用户后关闭屏幕，节省电量
@@ -1054,15 +1060,15 @@ void MainWindow::sendMessageToUser(const QByteArray bytes) {
       Logger::Tag("MainWindow").w("企业微信未配置");
       return;
     }
-    WxMessageSender::get()->sendImageMessageAsync("截屏结果通知", bytes);
+    // WxMessageSender::get()->sendImageMessageAsync("截屏结果通知", bytes);
   } else {
     QJsonObject obj = ConfigStore::get().load("emailConfig");
     if (obj.isEmpty()) {
       Logger::Tag("MainWindow").w("邮箱信息未配置");
       return;
     }
-    MailSender::get()->sendAttachmentEmail("截屏结果通知",
-                                           "结果见附件，请注意查收", bytes);
+    // MailSender::get()->sendAttachmentEmail("截屏结果通知",
+    //                                        "结果见附件，请注意查收", bytes);
   }
 
   // 通知完用户后关闭屏幕，节省电量
