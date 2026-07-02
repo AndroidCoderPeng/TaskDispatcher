@@ -3,8 +3,8 @@
         <file>application.png</file>
         <file>combox_arrow.png</file>
         <file>combox_arrow_007aff.png</file>
-        <file>socket_listening.png</file>
-        <file>socket_shutdown.png</file>
+        <file>usb_connected.png</file>
+        <file>usb_disconnected.png</file>
         <file>spin_up.png</file>
         <file>spin_down.png</file>
         <file>spin_up_007aff.png</file>

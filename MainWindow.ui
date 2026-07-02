@@ -6,20 +6,20 @@
             <rect>
                 <x>0</x>
                 <y>0</y>
-                <width>450</width>
-                <height>410</height>
+                <width>455</width>
+                <height>442</height>
             </rect>
         </property>
         <property name="minimumSize">
             <size>
-                <width>450</width>
-                <height>410</height>
+                <width>455</width>
+                <height>442</height>
             </size>
         </property>
         <property name="maximumSize">
             <size>
-                <width>450</width>
-                <height>410</height>
+                <width>455</width>
+                <height>442</height>
             </size>
         </property>
         <widget class="QWidget" name="centralWidget">
@@ -84,7 +84,7 @@
                                         <item>
                                             <widget class="QLabel" name="countDownLabel">
                                                 <property name="text">
-                                                    <string>距离重置任务还有 06时59分00秒</string>
+                                                    <string>距离重置任务还有 00时01分00秒</string>
                                                 </property>
                                             </widget>
                                         </item>
@@ -203,6 +203,62 @@
                                     </widget>
                                 </item>
                             </layout>
+                        </item>
+                    </layout>
+                </item>
+                <item>
+                    <layout class="QHBoxLayout" name="horizontalLayout">
+                        <property name="spacing">
+                            <number>8</number>
+                        </property>
+                        <item>
+                            <widget class="QLabel" name="usbIconView">
+                                <property name="minimumSize">
+                                    <size>
+                                        <width>24</width>
+                                        <height>24</height>
+                                    </size>
+                                </property>
+                                <property name="maximumSize">
+                                    <size>
+                                        <width>24</width>
+                                        <height>24</height>
+                                    </size>
+                                </property>
+                                <property name="pixmap">
+                                    <pixmap resource="image.qrc">:/usb_disconnected.png</pixmap>
+                                </property>
+                                <property name="scaledContents">
+                                    <bool>true</bool>
+                                </property>
+                            </widget>
+                        </item>
+                        <item>
+                            <widget class="QLabel" name="usbStateView">
+                                <property name="text">
+                                    <string>ADB未连接</string>
+                                </property>
+                            </widget>
+                        </item>
+                        <item>
+                            <spacer name="horizontalSpacer">
+                                <property name="orientation">
+                                    <enum>Qt::Horizontal</enum>
+                                </property>
+                                <property name="sizeHint" stdset="0">
+                                    <size>
+                                        <width>0</width>
+                                        <height>0</height>
+                                    </size>
+                                </property>
+                            </spacer>
+                        </item>
+                        <item>
+                            <widget class="QPushButton" name="connectDeviceButton">
+                                <property name="text">
+                                    <string>连接手机</string>
+                                </property>
+                            </widget>
                         </item>
                     </layout>
                 </item>
