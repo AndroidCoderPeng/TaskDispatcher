@@ -12,6 +12,8 @@ class ProcessExecutor : public QObject {
 public:
   explicit ProcessExecutor(QObject *parent = nullptr);
 
+  void initDebugPort(std::function<void(bool)> callback);
+
   void connectDevice(const QString &deviceIp);
 
   void disconnectDevice();

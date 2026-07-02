@@ -23,9 +23,40 @@ QString ProcessExecutor::adb() {
 #endif
 }
 
+void ProcessExecutor::initDebugPort(std::function<void(bool)> callback) {
+  QProcess *process = new QProcess(this);
+  connect(process,
+          QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished), this,
+          [process, callback](int exitCode, QProcess::ExitStatus) {
+            process->deleteLater();
+
+            if (exitCode != 0) {
+              const QString err = process->readAllStandardError().trimmed();
+              Logger::Tag("ProcessExecutor")
+                  .eFmt("Failed to init wifi adb port: %s",
+                        err.toStdString().c_str());
+              if (callback) {
+                callback(false);
+              }
+              return;
+            }
+
+            Logger::Tag("ProcessExecutor")
+                .i("WiFi adb port 5555 initialized successfully");
+            if (callback) {
+              callback(true);
+            }
+          });
+  process->start(adb(), {"tcpip", "5555"});
+}
+
 void ProcessExecutor::checkConnectState() {}
 
-void ProcessExecutor::connectDevice(const QString &deviceIp) {}
+void ProcessExecutor::connectDevice(const QString &deviceIp) {
+  emit signalConnectStateChanged(ConnectState::Connecting);
+  Logger::Tag("ProcessExecutor")
+      .iFmt("Connecting to device: %s", deviceIp.toStdString().c_str());
+}
 
 void ProcessExecutor::disconnectDevice() {}
 

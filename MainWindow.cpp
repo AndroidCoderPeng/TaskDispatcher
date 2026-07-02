@@ -686,13 +686,23 @@ void MainWindow::onConnectDeviceButtonClicked() {
   if (currentState == ConnectState::Connected) {
     processExecutorPtr->disconnectDevice();
   } else {
-    bool ok = false;
-    const QString deviceIp =
-        QInputDialog::getText(this, "无线连接", "请输入手机的局域网IP地址",
-                              QLineEdit::Normal, QString(), &ok);
-    if (ok && !deviceIp.isEmpty()) {
-      processExecutorPtr->connectDevice(deviceIp);
-    }
+    // 先执行 adb tcpip 5555
+    processExecutorPtr->initDebugPort([this](bool result) {
+      if (result) {
+        // 成功执行 adb tcpip 5555
+        bool ok = false;
+        const QString deviceIp =
+            QInputDialog::getText(this, "无线连接", "请输入手机的局域网IP地址",
+                                  QLineEdit::Normal, QString(), &ok);
+        if (ok && !deviceIp.isEmpty()) {
+          processExecutorPtr->connectDevice(deviceIp);
+        }
+      } else {
+        QMessageBox::critical(
+            nullptr, "错误",
+            "执行 adb tcpip 5555 失败，请重新插拔手机或检查 adb 是否可用");
+      }
+    });
   }
 }
 
