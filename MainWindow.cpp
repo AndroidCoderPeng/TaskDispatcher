@@ -696,12 +696,21 @@ void MainWindow::onConnectDeviceButtonClicked() {
     processExecutorPtr->initDebugPort([this](bool result) {
       if (result) {
         // 成功执行 adb tcpip 5555
+        QString defaultValue = "";
+        QJsonObject saved = ConfigStore::get().load("defaultIpConfig");
+        if (saved.contains("defaultIp")) {
+          defaultValue = saved["defaultIp"].toString();
+        }
+
         bool ok = false;
         const QString deviceIp =
             QInputDialog::getText(this, "无线连接", "请输入手机的局域网IP地址",
-                                  QLineEdit::Normal, QString(), &ok);
+                                  QLineEdit::Normal, defaultValue, &ok);
         if (ok && !deviceIp.isEmpty()) {
           processExecutorPtr->connectDevice(deviceIp);
+          QJsonObject obj;
+          obj["defaultIp"] = deviceIp;
+          ConfigStore::get().save("defaultIpConfig", obj);
         }
       } else {
         QMessageBox::critical(nullptr, "错误",
@@ -891,6 +900,13 @@ void MainWindow::slotConnectStateChanged(ConnectState state) {
   } else {
     ui->usbIconView->setPixmap(QPixmap(":/usb_disconnected.png"));
     ui->connectDeviceButton->setText("连接设备");
+    // if(){
+
+    // }else{
+
+    // }
+    /// 如果设备已经断开，则尝试自动重连3次defaultIpConfig，如果3次之后还是连不上，则发消息给用户，并调用processExecutorPtr->stopPeriodicCheck();
+
     processExecutorPtr->stopPeriodicCheck();
   }
   processExecutorPtr->getConnectedDeviceName(
