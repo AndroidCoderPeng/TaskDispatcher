@@ -17,15 +17,17 @@ public:
 
   void restartAdb();
 
-  void connectDevice(const QString &deviceIp);
-
-  void getConnectedDeviceName(std::function<void(QString)> callback);
-
-  void disconnectDevice();
-
   void startPeriodicCheck(int intervalMs = 5000);
 
   void stopPeriodicCheck();
+
+  void disconnectDevice();
+
+  /// -------------- 以下函数均需要指定设备，否则不生效 --------------
+
+  void connectDevice(const QString &deviceIp);
+
+  void getConnectedDeviceName(std::function<void(QString)> callback);
 
   void wakeUpDevice();
 
@@ -52,8 +54,12 @@ signals:
 
 private:
   QTimer *chekTimerPtr = nullptr;
+  QString connectedDevice;
 
-  QString adb();
+  QString selectExecutor();
+
+  // 条件化添加 -s <device>，当 connectedDevice 为空时不添加，让 adb 自动选设备
+  QStringList appendArgs(const QStringList &args) const;
 
   void checkConnectState();
 };

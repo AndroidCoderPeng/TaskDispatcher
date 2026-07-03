@@ -12,15 +12,24 @@
 
 ProcessExecutor::ProcessExecutor(QObject *parent) : QObject(parent) {
   Logger::Tag("ProcessExecutor")
-      .dFmt("Using adb path: %s", adb().toStdString().c_str());
+      .dFmt("Using adb path: %s", selectExecutor().toStdString().c_str());
 }
 
-QString ProcessExecutor::adb() {
+QString ProcessExecutor::selectExecutor() {
 #ifdef Q_OS_WIN
   return QCoreApplication::applicationDirPath() + "/tool/windows/adb.exe";
 #else
   return "adb";
 #endif
+}
+
+QStringList ProcessExecutor::appendArgs(const QStringList &args) const {
+  if (connectedDevice.isEmpty()) {
+    return args;
+  }
+  QStringList result;
+  result << "-s" << connectedDevice << args;
+  return result;
 }
 
 void ProcessExecutor::initDebugPort(std::function<void(bool)> callback) {
@@ -47,7 +56,7 @@ void ProcessExecutor::initDebugPort(std::function<void(bool)> callback) {
               callback(true);
             }
           });
-  process->start(adb(), {"tcpip", "5555"});
+  process->start(selectExecutor(), {"tcpip", "5555"});
 }
 
 void ProcessExecutor::restartAdb() {
@@ -75,84 +84,9 @@ void ProcessExecutor::restartAdb() {
                         .i("ADB server restarted successfully");
                   }
                 });
-            start->start(adb(), {"start-server"});
+            start->start(selectExecutor(), {"start-server"});
           });
-  kill->start(adb(), {"kill-server"});
-}
-
-void ProcessExecutor::connectDevice(const QString &deviceIp) {
-  emit signalConnectStateChanged(ConnectState::Connecting);
-  Logger::Tag("ProcessExecutor")
-      .iFmt("Connecting to device: %s", deviceIp.toStdString().c_str());
-
-  QProcess *process = new QProcess(this);
-  connect(
-      process, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
-      this, [this, process, deviceIp](int exitCode, QProcess::ExitStatus) {
-        process->deleteLater();
-
-        if (exitCode != 0) {
-          const QString err = process->readAllStandardError().trimmed();
-          Logger::Tag("ProcessExecutor")
-              .eFmt("Failed to connect to device %s: %s",
-                    deviceIp.toStdString().c_str(), err.toStdString().c_str());
-          emit signalConnectStateChanged(ConnectState::ConnectFailed);
-          return;
-        }
-
-        Logger::Tag("ProcessExecutor")
-            .iFmt("Successfully connected to device: %s",
-                  deviceIp.toStdString().c_str());
-        emit signalConnectStateChanged(ConnectState::Connected);
-      });
-  process->start(adb(), {"connect", deviceIp});
-}
-
-void ProcessExecutor::getConnectedDeviceName(
-    std::function<void(QString)> callback) {
-  QProcess *process = new QProcess(this);
-  connect(process,
-          QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished), this,
-          [process, callback](int exitCode, QProcess::ExitStatus) {
-            process->deleteLater();
-
-            if (exitCode != 0) {
-              if (callback) {
-                callback("");
-              }
-              return;
-            }
-
-            if (callback) {
-              const QString output = process->readAllStandardOutput().trimmed();
-              callback(output);
-            }
-          });
-  process->start(adb(), {"shell", "getprop", "ro.product.brand"});
-}
-
-void ProcessExecutor::disconnectDevice() {
-  Logger::Tag("ProcessExecutor").i("Disconnecting device...");
-
-  QProcess *process = new QProcess(this);
-  connect(process,
-          QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished), this,
-          [this, process](int exitCode, QProcess::ExitStatus) {
-            process->deleteLater();
-
-            if (exitCode != 0) {
-              const QString err = process->readAllStandardError().trimmed();
-              Logger::Tag("ProcessExecutor")
-                  .eFmt("Failed to disconnect device: %s",
-                        err.toStdString().c_str());
-            } else {
-              Logger::Tag("ProcessExecutor").i("Device disconnected");
-            }
-
-            // 无论 adb disconnect 是否成功，逻辑状态都变为 Disconnected
-            emit signalConnectStateChanged(ConnectState::Disconnected);
-          });
-  process->start(adb(), {"disconnect"});
+  kill->start(selectExecutor(), {"kill-server"});
 }
 
 void ProcessExecutor::startPeriodicCheck(int intervalMs) {
@@ -189,7 +123,7 @@ void ProcessExecutor::checkConnectState() {
               emit signalConnectStateChanged(ConnectState::Disconnected);
             }
           });
-  process->start(adb(), {"devices"});
+  process->start(selectExecutor(), {"devices"});
 }
 
 void ProcessExecutor::stopPeriodicCheck() {
@@ -199,42 +133,120 @@ void ProcessExecutor::stopPeriodicCheck() {
   }
 }
 
+void ProcessExecutor::disconnectDevice() {
+  Logger::Tag("ProcessExecutor").i("Disconnecting device...");
+
+  QProcess *process = new QProcess(this);
+  connect(process,
+          QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished), this,
+          [this, process](int exitCode, QProcess::ExitStatus) {
+            process->deleteLater();
+
+            if (exitCode != 0) {
+              const QString err = process->readAllStandardError().trimmed();
+              Logger::Tag("ProcessExecutor")
+                  .eFmt("Failed to disconnect device: %s",
+                        err.toStdString().c_str());
+            } else {
+              Logger::Tag("ProcessExecutor").i("Device disconnected");
+            }
+            connectedDevice.clear();
+            // 无论 adb disconnect 是否成功，逻辑状态都变为 Disconnected
+            emit signalConnectStateChanged(ConnectState::Disconnected);
+          });
+  process->start(selectExecutor(), {"disconnect"});
+}
+
+void ProcessExecutor::connectDevice(const QString &deviceIp) {
+  emit signalConnectStateChanged(ConnectState::Connecting);
+  Logger::Tag("ProcessExecutor")
+      .iFmt("Connecting to device: %s", deviceIp.toStdString().c_str());
+
+  QProcess *process = new QProcess(this);
+  connect(
+      process, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
+      this, [this, process, deviceIp](int exitCode, QProcess::ExitStatus) {
+        process->deleteLater();
+
+        if (exitCode != 0) {
+          const QString err = process->readAllStandardError().trimmed();
+          Logger::Tag("ProcessExecutor")
+              .eFmt("Failed to connect to device %s: %s",
+                    deviceIp.toStdString().c_str(), err.toStdString().c_str());
+          emit signalConnectStateChanged(ConnectState::ConnectFailed);
+          return;
+        }
+
+        Logger::Tag("ProcessExecutor")
+            .iFmt("Successfully connected to device: %s",
+                  deviceIp.toStdString().c_str());
+        connectedDevice = deviceIp;
+        emit signalConnectStateChanged(ConnectState::Connected);
+      });
+  process->start(selectExecutor(), {"connect", deviceIp});
+}
+
+void ProcessExecutor::getConnectedDeviceName(
+    std::function<void(QString)> callback) {
+  QProcess *process = new QProcess(this);
+  connect(process,
+          QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished), this,
+          [process, callback](int exitCode, QProcess::ExitStatus) {
+            process->deleteLater();
+
+            if (exitCode != 0) {
+              if (callback) {
+                callback("");
+              }
+              return;
+            }
+
+            if (callback) {
+              const QString output = process->readAllStandardOutput().trimmed();
+              callback(output);
+            }
+          });
+  process->start(selectExecutor(),
+                 appendArgs({"shell", "getprop", "ro.product.brand"}));
+}
+
 void ProcessExecutor::wakeUpDevice() {
   // 亮屏
   QProcess *wake = new QProcess(this);
   connect(wake, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
           wake, &QProcess::deleteLater);
-  wake->start(adb(), {"shell", "input", "keyevent", "KEYCODE_WAKEUP"});
+  wake->start(selectExecutor(),
+              appendArgs({"shell", "input", "keyevent", "KEYCODE_WAKEUP"}));
   Logger::Tag("ProcessExecutor").i("Waking up device...");
 
   // 亮屏后延迟一下，等锁屏界面显示出来，再做上滑解锁
   QTimer::singleShot(1000, this, [this]() {
     // 获取屏幕分辨率
     QProcess *wm = new QProcess(this);
-    connect(wm, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
-            this, [this, wm](int, QProcess::ExitStatus) {
-              wm->deleteLater();
-              const QString output = wm->readAllStandardOutput().trimmed();
-              Logger::Tag("ProcessExecutor")
-                  .dFmt("Screen size: %s", output.toStdString().c_str());
+    connect(
+        wm, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished), this,
+        [this, wm](int, QProcess::ExitStatus) {
+          wm->deleteLater();
+          const QString output = wm->readAllStandardOutput().trimmed();
+          Logger::Tag("ProcessExecutor")
+              .dFmt("Screen size: %s", output.toStdString().c_str());
 
-              int width = 720;
-              int height = 1280;
-              // 解析 "Physical size: 1080x2400" 或 "1080x2400"
-              const QString sizeStr = output.section(':', -1).trimmed();
-              const QStringList wh = sizeStr.split('x');
-              if (wh.size() == 2) {
-                width = wh[0].toInt();
-                height = wh[1].toInt();
-              }
+          int width = 720;
+          int height = 1280;
+          // 解析 "Physical size: 1080x2400" 或 "1080x2400"
+          const QString sizeStr = output.section(':', -1).trimmed();
+          const QStringList wh = sizeStr.split('x');
+          if (wh.size() == 2) {
+            width = wh[0].toInt();
+            height = wh[1].toInt();
+          }
 
-              // 从底部向上滑动解锁
-              const int x = width / 2;
-              const int yFrom = height * 4 / 5;
-              const int yTo = height / 5;
-              QProcess *swipe = new QProcess(this);
-              connect(
-                  swipe,
+          // 从底部向上滑动解锁
+          const int x = width / 2;
+          const int yFrom = height * 4 / 5;
+          const int yTo = height / 5;
+          QProcess *swipe = new QProcess(this);
+          connect(swipe,
                   QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
                   this, [this, swipe](int, QProcess::ExitStatus) {
                     swipe->deleteLater();
@@ -244,13 +256,14 @@ void ProcessExecutor::wakeUpDevice() {
                     QTimer::singleShot(
                         3000, this, [this]() { emit signalDeviceWokenUp(); });
                   });
-              swipe->start(adb(), {"shell", "input", "swipe",
+          swipe->start(selectExecutor(),
+                       appendArgs({"shell", "input", "swipe",
                                    QString::number(x), QString::number(yFrom),
-                                   QString::number(x), QString::number(yTo)});
-              Logger::Tag("ProcessExecutor")
-                  .dFmt("Swipe unlock: %d,%d -> %d,%d", x, yFrom, x, yTo);
-            });
-    wm->start(adb(), {"shell", "wm", "size"});
+                                   QString::number(x), QString::number(yTo)}));
+          Logger::Tag("ProcessExecutor")
+              .dFmt("Swipe unlock: %d,%d -> %d,%d", x, yFrom, x, yTo);
+        });
+    wm->start(selectExecutor(), appendArgs({"shell", "wm", "size"}));
   });
 }
 
@@ -307,7 +320,8 @@ void ProcessExecutor::captureScreen() {
 
               emit signalScreenCaptured(filePath);
             });
-        process->start(adb(), {"exec-out", "screencap", "-p"});
+        process->start(selectExecutor(),
+                       appendArgs({"exec-out", "screencap", "-p"}));
       });
 }
 
@@ -322,10 +336,9 @@ void ProcessExecutor::openTargetApp(const QString &packageName) {
         disconnect(*openConn);
         delete openConn;
 
-        QStringList args;
-        args << "shell" << "monkey"
-             << "-p" << packageName << "-c"
-             << "android.intent.category.LAUNCHER" << QString::number(1);
+        const QStringList args = appendArgs(
+            {"shell", "monkey", "-p", packageName, "-c",
+             "android.intent.category.LAUNCHER", QString::number(1)});
 
         QProcess *process = new QProcess(this);
         connect(
@@ -356,7 +369,7 @@ void ProcessExecutor::openTargetApp(const QString &packageName) {
               emit signalOpenAppSuccess(packageName);
             });
 
-        process->start(adb(), args);
+        process->start(selectExecutor(), args);
       });
 }
 
@@ -365,7 +378,8 @@ void ProcessExecutor::killTargetApp(const QString &packageName) {
   connect(process,
           QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
           process, &QProcess::deleteLater);
-  process->start(adb(), {"shell", "am", "force-stop", packageName});
+  process->start(selectExecutor(),
+                 appendArgs({"shell", "am", "force-stop", packageName}));
 }
 
 void ProcessExecutor::screenOff() {
@@ -373,5 +387,6 @@ void ProcessExecutor::screenOff() {
   connect(process,
           QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
           process, &QProcess::deleteLater);
-  process->start(adb(), {"shell", "input", "keyevent", "KEYCODE_SLEEP"});
+  process->start(selectExecutor(),
+                 appendArgs({"shell", "input", "keyevent", "KEYCODE_SLEEP"}));
 }
