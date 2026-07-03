@@ -69,6 +69,11 @@ private:
       {"微信", "com.tencent.mm"}};
   ConnectState currentState = ConnectState::Disconnected;
 
+  // 自动重连相关
+  bool isAutoReconnecting = false;
+  int reconnectRetryCount = 0;
+  bool disableAutoReconnect = false;
+
   // ====== 系统托盘 ======
   void setupSystemTray();
 

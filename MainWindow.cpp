@@ -690,8 +690,14 @@ void MainWindow::onAddTaskButtonClicked() {
 
 void MainWindow::onConnectDeviceButtonClicked() {
   if (currentState == ConnectState::Connected) {
+    // 手动断开，禁止后续自动重连
+    disableAutoReconnect = true;
     processExecutorPtr->disconnectDevice();
   } else {
+    // 手动连接，恢复自动重连能力
+    disableAutoReconnect = false;
+    isAutoReconnecting = false;
+    reconnectRetryCount = 0;
     // 先执行 adb tcpip 5555
     processExecutorPtr->initDebugPort([this](bool result) {
       if (result) {
@@ -892,23 +898,6 @@ void MainWindow::slotHolidaySkipped() {
 
 void MainWindow::slotConnectStateChanged(ConnectState state) {
   currentState = state;
-  if (state == ConnectState::Connected) {
-    ui->usbIconView->setPixmap(QPixmap(":/usb_connected.png"));
-    ui->connectDeviceButton->setText("断开设备");
-    ToastWidget::showInfo(this, "设备已通过 WiFi 连接，现在可以拔掉 USB 线了");
-    processExecutorPtr->startPeriodicCheck();
-  } else {
-    ui->usbIconView->setPixmap(QPixmap(":/usb_disconnected.png"));
-    ui->connectDeviceButton->setText("连接设备");
-    // if(){
-
-    // }else{
-
-    // }
-    /// 如果设备已经断开，则尝试自动重连3次defaultIpConfig，如果3次之后还是连不上，则发消息给用户，并调用processExecutorPtr->stopPeriodicCheck();
-
-    processExecutorPtr->stopPeriodicCheck();
-  }
   processExecutorPtr->getConnectedDeviceName(
       [this, state](const QString &device) {
         if (device.isEmpty()) {
@@ -920,6 +909,65 @@ void MainWindow::slotConnectStateChanged(ConnectState state) {
                                         : "设备未连接");
         }
       });
+  if (state == ConnectState::Connected) {
+    disableAutoReconnect = false;
+    isAutoReconnecting = false;
+    reconnectRetryCount = 0;
+
+    ui->usbIconView->setPixmap(QPixmap(":/usb_connected.png"));
+    ui->connectDeviceButton->setText("断开设备");
+    ToastWidget::showInfo(this, "设备已通过 WiFi 连接，现在可以拔掉 USB 线了");
+    processExecutorPtr->startPeriodicCheck();
+  } else if (state == ConnectState::Disconnected) {
+    ui->usbIconView->setPixmap(QPixmap(":/usb_disconnected.png"));
+    ui->connectDeviceButton->setText("连接设备");
+
+    // 用户手动断开，不做任何自动操作
+    if (disableAutoReconnect) {
+      processExecutorPtr->stopPeriodicCheck();
+      return;
+    }
+
+    // 已在自动重连中，忽略重复的断开通知
+    if (isAutoReconnecting)
+      return;
+
+    const QJsonObject saved = ConfigStore::get().load("defaultIpConfig");
+    if (!saved.contains("defaultIp")) {
+      processExecutorPtr->stopPeriodicCheck();
+      return;
+    }
+
+    isAutoReconnecting = true;
+    reconnectRetryCount = 0;
+    const QString ip = saved["defaultIp"].toString();
+    Logger::Tag("MainWindow")
+        .dFmt("设备断开，尝试自动重连: %s", ip.toStdString().c_str());
+    processExecutorPtr->connectDevice(ip);
+  } else if (state == ConnectState::ConnectFailed) {
+    // 非自动重连场景（用户手动连接失败）
+    if (!isAutoReconnecting) {
+      processExecutorPtr->stopPeriodicCheck();
+      return;
+    }
+
+    reconnectRetryCount++;
+    if (reconnectRetryCount < 3) {
+      const QString ip =
+          ConfigStore::get().load("defaultIpConfig")["defaultIp"].toString();
+      Logger::Tag("MainWindow")
+          .dFmt("自动重连失败，第 %d 次重试: %s", reconnectRetryCount,
+                ip.toStdString().c_str());
+      processExecutorPtr->connectDevice(ip);
+    } else {
+      Logger::Tag("MainWindow").w("自动重连 3 次均失败");
+      isAutoReconnecting = false;
+      sendMessageToUser(
+          "设备连接失败",
+          "设备自动重连 3 次均失败，请检查设备网络连接后手动重连");
+      processExecutorPtr->stopPeriodicCheck();
+    }
+  }
 }
 
 void MainWindow::slotScreenCaptured(const QString &filePath) {
