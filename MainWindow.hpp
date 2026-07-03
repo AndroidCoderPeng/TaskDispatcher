@@ -47,7 +47,7 @@ public slots:
 
   void slotCaptureFailed(const QString &message);
 
-  void slotOpenAppSuccess(const QString &packageName);
+  void slotOpenAppSuccess();
 
   void slotOpenAppFailed(const QString &message);
 
@@ -65,8 +65,7 @@ private:
       {"钉钉", "com.alibaba.android.rimet"},
       {"企业微信", "com.tencent.wework"},
       {"飞书", "com.ss.android.lark"},
-      {"QQ", "com.tencent.mobileqq"},
-      {"微信", "com.tencent.mm"}};
+      {"移动办公M3", "com.seeyon.cmp"}};
   ConnectState currentState = ConnectState::Disconnected;
 
   // 自动重连相关

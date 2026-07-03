@@ -157,6 +157,51 @@ void ProcessExecutor::disconnectDevice() {
   process->start(selectExecutor(), {"disconnect"});
 }
 
+void ProcessExecutor::resolveLauncherActivity(
+    const QString &packageName, std::function<void(const QString &)> callback) {
+  QProcess *process = new QProcess(this);
+  connect(process,
+          QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished), this,
+          [process, callback](int exitCode, QProcess::ExitStatus) {
+            process->deleteLater();
+
+            if (exitCode != 0) {
+              Logger::Tag("ProcessExecutor")
+                  .e("Failed to resolve launcher activity");
+              if (callback) {
+                callback("");
+              }
+              return;
+            }
+
+            const QString output = process->readAllStandardOutput().trimmed();
+            if (output.contains("No activity found")) {
+              if (callback) {
+                callback("");
+              }
+              return;
+            }
+
+            Logger::Tag("ProcessExecutor")
+                .dFmt("Resolved launcher activity: %s",
+                      output.toStdString().c_str());
+            if (callback) {
+              callback(output);
+            }
+          });
+
+  // 整条管道命令作为 shell 的一个参数：adb shell "cmd ... | tail -n 1"
+  // 不能用 appendArgs 把 pipe 拆开，管道必须在 Android 设备端执行
+  QStringList args;
+  if (!connectedDevice.isEmpty()) {
+    args << "-s" << connectedDevice;
+  }
+  args << "shell"
+       << QString("cmd package resolve-activity --brief %1 | tail -n 1")
+              .arg(packageName);
+  process->start(selectExecutor(), args);
+}
+
 void ProcessExecutor::connectDevice(const QString &deviceIp) {
   emit signalConnectStateChanged(ConnectState::Connecting);
   Logger::Tag("ProcessExecutor")
@@ -325,27 +370,22 @@ void ProcessExecutor::captureScreen() {
       });
 }
 
-void ProcessExecutor::openTargetApp(const QString &packageName) {
+void ProcessExecutor::openTargetApp(const QString activity) {
   wakeUpDevice();
 
   // 等待设备唤醒完成后再打开 App
   QMetaObject::Connection *openConn = new QMetaObject::Connection;
   *openConn = connect(
       this, &ProcessExecutor::signalDeviceWokenUp, this,
-      [this, openConn, packageName]() {
+      [this, openConn, activity]() {
         disconnect(*openConn);
         delete openConn;
-
-        const QStringList args = appendArgs(
-            {"shell", "monkey", "-p", packageName, "-c",
-             "android.intent.category.LAUNCHER", QString::number(1)});
 
         QProcess *process = new QProcess(this);
         connect(
             process,
             QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished), this,
-            [this, process, packageName](int exitCode,
-                                         QProcess::ExitStatus exitStatus) {
+            [this, process](int exitCode, QProcess::ExitStatus exitStatus) {
               process->deleteLater();
 
               if (exitStatus == QProcess::CrashExit || exitCode != 0) {
@@ -366,10 +406,11 @@ void ProcessExecutor::openTargetApp(const QString &packageName) {
                 return;
               }
 
-              emit signalOpenAppSuccess(packageName);
+              emit signalOpenAppSuccess();
             });
 
-        process->start(selectExecutor(), args);
+        process->start(selectExecutor(),
+                       appendArgs({"shell", "am", "start", "-n", activity}));
       });
 }
 

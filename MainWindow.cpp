@@ -370,10 +370,18 @@ void MainWindow::onActionTargetSettingClicked() {
   if (ok && !inputValue.isEmpty()) {
     // 先查映射表，找不到则直接作为包名使用
     const QString packageName = nameToPackage.value(inputValue, inputValue);
-    QJsonObject obj;
-    obj["targetApp"] = packageName;
-    ConfigStore::get().save("targetAppConfig", obj);
-    ToastWidget::showInfo(this, "目标APP配置已保存");
+    processExecutorPtr->resolveLauncherActivity(
+        packageName, [this, packageName](QString activity) {
+          if (activity.isEmpty()) {
+            ToastWidget::showError(this, "目标APP配置失败，请检查");
+            return;
+          }
+          QJsonObject obj;
+          obj["targetApp"] = packageName;
+          obj["launchActivity"] = activity;
+          ConfigStore::get().save("targetAppConfig", obj);
+          ToastWidget::showInfo(this, "目标APP配置已保存");
+        });
   }
 }
 
@@ -538,10 +546,11 @@ void MainWindow::onActionOpenTargetAppClicked() {
     return;
   }
 
-  const auto packageName = obj["targetApp"].toString();
+  const auto launchActivity = obj["launchActivity"].toString();
   Logger::Tag("MainWindow")
-      .dFmt("Opening target app: %s", packageName.toStdString().c_str());
-  processExecutorPtr->openTargetApp(packageName);
+      .dFmt("Opening target app, activity: %s",
+            launchActivity.toStdString().c_str());
+  processExecutorPtr->openTargetApp(launchActivity);
 }
 
 void MainWindow::onActionKillTargetAppClicked() {
@@ -834,12 +843,13 @@ void MainWindow::slotTaskExecuted(const QDateTime &actualTime, qint32 taskId,
   }
 
   const auto packageName = obj["targetApp"].toString();
+  const auto launchActivity = obj["launchActivity"].toString();
 
   // 记录待杀死的包名，供后续自动流程使用
   pendingKillPackage = packageName;
 
   // 通过 adb shell monkey 打开目标APP
-  processExecutorPtr->openTargetApp(packageName);
+  processExecutorPtr->openTargetApp(launchActivity);
 
   Logger::Tag("MainWindow")
       .dFmt("Task executed: taskId=%d, actualTime=%s, current=%d, total=%d",
@@ -999,12 +1009,9 @@ void MainWindow::slotCaptureFailed(const QString &message) {
   pendingKillPackage.clear();
 }
 
-void MainWindow::slotOpenAppSuccess(const QString &packageName) {
-  ToastWidget::showInfo(this, QString("应用已打开: %1").arg(packageName));
+void MainWindow::slotOpenAppSuccess() {
   if (pendingKillPackage.isEmpty()) {
-    Logger::Tag("MainWindow")
-        .dFmt("手动打开应用: %s，不触发后续截屏+杀App流程",
-              packageName.toStdString().c_str());
+    Logger::Tag("MainWindow").i("手动打开应用，不触发后续截屏+杀App流程");
     return;
   }
 

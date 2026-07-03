@@ -23,6 +23,10 @@ public:
 
   void disconnectDevice();
 
+  void resolveLauncherActivity(
+      const QString &packageName,
+      std::function<void(const QString &activity)> callback);
+
   /// -------------- 以下函数均需要指定设备，否则不生效 --------------
 
   void connectDevice(const QString &deviceIp);
@@ -33,7 +37,7 @@ public:
 
   void captureScreen();
 
-  void openTargetApp(const QString &packageName);
+  void openTargetApp(const QString activity);
 
   void killTargetApp(const QString &packageName);
 
@@ -48,7 +52,7 @@ signals:
 
   void signalCaptureFailed(const QString &message);
 
-  void signalOpenAppSuccess(const QString &packageName);
+  void signalOpenAppSuccess();
 
   void signalOpenAppFailed(const QString &message);
 
