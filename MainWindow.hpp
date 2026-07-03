@@ -61,7 +61,7 @@ private:
   // 任务自动流程中待杀死的包名，空串表示不在自动流程中
   QString pendingKillPackage;
 
-  const QHash<QString, QString> nameToPackage = {
+  QHash<QString, QString> nameToPackage = {
       {"钉钉", "com.alibaba.android.rimet"},
       {"企业微信", "com.tencent.wework"},
       {"飞书", "com.ss.android.lark"},
@@ -79,6 +79,7 @@ private:
   void onTrayIconActivated(QSystemTrayIcon::ActivationReason reason);
 
   // ====== 菜单栏 ======
+  void onActionImportAppInfoClicked();
   void onActionImportDataClicked();
   void onActionExportDataClicked();
   void onActionCloseClicked();

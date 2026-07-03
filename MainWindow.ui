@@ -277,7 +277,9 @@
                 <property name="title">
                     <string>文件(&amp;F)</string>
                 </property>
+                <addaction name="actionImportAppInfo"/>
                 <addaction name="actionImportData"/>
+                <addaction name="separator"/>
                 <addaction name="actionExportData"/>
                 <addaction name="separator"/>
                 <addaction name="actionExit"/>
@@ -338,6 +340,11 @@
             <addaction name="menuCommand"/>
             <addaction name="menuHelp"/>
         </widget>
+        <action name="actionImportAppInfo">
+            <property name="text">
+                <string>导入应用和包名</string>
+            </property>
+        </action>
         <action name="actionImportData">
             <property name="text">
                 <string>导入数据(&amp;I)</string>

@@ -71,10 +71,20 @@ MainWindow::MainWindow(QWidget *parent)
     }
   }
 
+  {
+    const QJsonObject customMapping =
+        ConfigStore::get().load("customAppMapping");
+    for (auto it = customMapping.begin(); it != customMapping.end(); ++it) {
+      nameToPackage.insert(it.key(), it.value().toString());
+    }
+  }
+
   // 初始化系统托盘
   setupSystemTray();
 
   // 连接顶部菜单信号和槽
+  connect(ui->actionImportAppInfo, &QAction::triggered, this,
+          &MainWindow::onActionImportAppInfoClicked);
   connect(ui->actionImportData, &QAction::triggered, this,
           &MainWindow::onActionImportDataClicked);
   connect(ui->actionExportData, &QAction::triggered, this,
@@ -224,11 +234,56 @@ void MainWindow::onTrayIconActivated(QSystemTrayIcon::ActivationReason reason) {
   }
 }
 
+void MainWindow::onActionImportAppInfoClicked() {
+  const QString filePath = QFileDialog::getOpenFileName(this, "导入应用和包名",
+                                                        "", "CSV 文件 (*.csv)");
+  if (filePath.isEmpty()) {
+    return;
+  }
+
+  QFile file(filePath);
+  if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+    QMessageBox::critical(this, "错误", "无法打开文件：" + file.errorString());
+    return;
+  }
+
+  int importCount = 0;
+  while (!file.atEnd()) {
+    const QString line = QString::fromUtf8(file.readLine()).trimmed();
+    if (line.isEmpty() || line.startsWith('#'))
+      continue; // 跳过空行和注释
+
+    const QStringList parts = line.split(',');
+    if (parts.size() >= 2) {
+      const QString appName = parts[0].trimmed();
+      const QString packageName = parts[1].trimmed();
+      if (!appName.isEmpty() && !packageName.isEmpty()) {
+        nameToPackage.insert(appName, packageName);
+        ++importCount;
+      }
+    }
+  }
+  file.close();
+
+  QJsonObject customMapping;
+  // 默认的四个不需要存，只存用户自定义的
+  const QSet<QString> defaultNames = {"钉钉", "企业微信", "飞书", "移动办公M3"};
+  for (auto it = nameToPackage.begin(); it != nameToPackage.end(); ++it) {
+    if (!defaultNames.contains(it.key())) {
+      customMapping.insert(it.key(), it.value());
+    }
+  }
+  ConfigStore::get().save("customAppMapping", customMapping);
+
+  Logger::Tag("MainWindow")
+      .dFmt("Imported %d app(s), total: %d", importCount, nameToPackage.size());
+  ToastWidget::showInfo(this, QString("成功导入 %1 个应用").arg(importCount));
+}
+
 void MainWindow::onActionImportDataClicked() {
   const QString filePath =
       QFileDialog::getOpenFileName(this, "导入数据", "", "配置文件 (*.json)");
   if (filePath.isEmpty()) {
-    Logger::Tag("MainWindow").i("Import data canceled");
     return;
   }
 
