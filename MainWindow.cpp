@@ -1090,18 +1090,18 @@ void MainWindow::sendMessageToUser(const QString &title,
       Logger::Tag("MainWindow").w("企业微信未配置");
       return;
     }
-    // WxMessageSender::get()->sendMessageAsync(title, message);
+    WxMessageSender::get()->sendMessageAsync(title, message);
   } else {
     QJsonObject obj = ConfigStore::get().load("emailConfig");
     if (obj.isEmpty()) {
       Logger::Tag("MainWindow").w("邮箱信息未配置");
       return;
     }
-    // MailSender::get()->sendEmail(title, message);
+    MailSender::get()->sendEmail(title, message);
   }
 
-  // 通知完用户后关闭屏幕，节省电量
-  processExecutorPtr->screenOff();
+  // 通知完用户后关闭屏幕，节省电量，不必手动调用，手机有自动息屏设置
+  // processExecutorPtr->screenOff();
 }
 
 void MainWindow::sendMessageToUser(const QByteArray bytes) {
@@ -1114,19 +1114,19 @@ void MainWindow::sendMessageToUser(const QByteArray bytes) {
       Logger::Tag("MainWindow").w("企业微信未配置");
       return;
     }
-    // WxMessageSender::get()->sendImageMessageAsync("截屏结果通知", bytes);
+    WxMessageSender::get()->sendImageMessageAsync("截屏结果通知", bytes);
   } else {
     QJsonObject obj = ConfigStore::get().load("emailConfig");
     if (obj.isEmpty()) {
       Logger::Tag("MainWindow").w("邮箱信息未配置");
       return;
     }
-    // MailSender::get()->sendAttachmentEmail("截屏结果通知",
-    //                                        "结果见附件，请注意查收", bytes);
+    MailSender::get()->sendAttachmentEmail("截屏结果通知",
+                                           "结果见附件，请注意查收", bytes);
   }
 
-  // 通知完用户后关闭屏幕，节省电量
-  processExecutorPtr->screenOff();
+  // 通知完用户后关闭屏幕，节省电量，不必手动调用，手机有自动息屏设置
+  // processExecutorPtr->screenOff();
 }
 
 void MainWindow::changeEvent(QEvent *event) {
