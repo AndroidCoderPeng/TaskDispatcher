@@ -698,9 +698,10 @@ void MainWindow::onConnectDeviceButtonClicked() {
           processExecutorPtr->connectDevice(deviceIp);
         }
       } else {
-        QMessageBox::critical(
-            nullptr, "错误",
-            "执行 adb tcpip 5555 失败，请重新插拔手机或检查 adb 是否可用");
+        QMessageBox::critical(nullptr, "错误",
+                              "ADB 初始化失败，请重新插拔手机 USB "
+                              "线，并在手机上选择「传输文件」模式（非「仅充电」"
+                              "），确保已开启 USB 调试");
       }
     });
   }
@@ -878,13 +879,23 @@ void MainWindow::slotConnectStateChanged(ConnectState state) {
   currentState = state;
   if (state == ConnectState::Connected) {
     ui->usbIconView->setPixmap(QPixmap(":/usb_connected.png"));
-    ui->usbStateView->setText("已连接");
     ui->connectDeviceButton->setText("断开设备");
+    ToastWidget::showInfo(this, "设备已通过 WiFi 连接，现在可以拔掉 USB 线了");
   } else {
     ui->usbStateView->setPixmap(QPixmap(":/usb_disconnected.png"));
-    ui->usbStateView->setText("未连接");
     ui->connectDeviceButton->setText("连接设备");
   }
+  processExecutorPtr->getConnectedDeviceName(
+      [this, state](const QString &device) {
+        if (device.isEmpty()) {
+          ui->usbStateView->setText(
+              state == ConnectState::Connected ? "设备已连接" : "设备未连接");
+        } else {
+          ui->usbStateView->setText(state == ConnectState::Connected
+                                        ? QString("%1 已连接").arg(device)
+                                        : "设备未连接");
+        }
+      });
 }
 
 void MainWindow::slotScreenCaptured(const QString &filePath) {

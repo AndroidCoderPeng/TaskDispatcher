@@ -14,6 +14,8 @@ public:
 
   void initDebugPort(std::function<void(bool)> callback);
 
+  void getConnectedDeviceName(std::function<void(QString)> callback);
+
   void connectDevice(const QString &deviceIp);
 
   void disconnectDevice();

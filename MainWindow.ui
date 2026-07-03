@@ -236,7 +236,7 @@
                         <item>
                             <widget class="QLabel" name="usbStateView">
                                 <property name="text">
-                                    <string>ADB未连接</string>
+                                    <string>设备未连接</string>
                                 </property>
                             </widget>
                         </item>

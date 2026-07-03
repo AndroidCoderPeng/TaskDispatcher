@@ -23,6 +23,31 @@ QString ProcessExecutor::adb() {
 #endif
 }
 
+void ProcessExecutor::getConnectedDeviceName(
+    std::function<void(QString)> callback) {
+  QProcess *process = new QProcess(this);
+  connect(process,
+          QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished), this,
+          [process, callback](int exitCode, QProcess::ExitStatus) {
+            process->deleteLater();
+
+            if (exitCode != 0) {
+              if (callback) {
+                callback("");
+              }
+              return;
+            }
+
+            Logger::Tag("ProcessExecutor")
+                .i("Successfully got connected device name");
+            if (callback) {
+              const QString output = process->readAllStandardOutput().trimmed();
+              callback(output);
+            }
+          });
+  process->start(adb(), {"shell", "getprop", "ro.product.brand"});
+}
+
 void ProcessExecutor::initDebugPort(std::function<void(bool)> callback) {
   QProcess *process = new QProcess(this);
   connect(process,
@@ -56,9 +81,53 @@ void ProcessExecutor::connectDevice(const QString &deviceIp) {
   emit signalConnectStateChanged(ConnectState::Connecting);
   Logger::Tag("ProcessExecutor")
       .iFmt("Connecting to device: %s", deviceIp.toStdString().c_str());
+
+  QProcess *process = new QProcess(this);
+  connect(
+      process, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
+      this, [this, process, deviceIp](int exitCode, QProcess::ExitStatus) {
+        process->deleteLater();
+
+        if (exitCode != 0) {
+          const QString err = process->readAllStandardError().trimmed();
+          Logger::Tag("ProcessExecutor")
+              .eFmt("Failed to connect to device %s: %s",
+                    deviceIp.toStdString().c_str(), err.toStdString().c_str());
+          emit signalConnectStateChanged(ConnectState::ConnectFailed);
+          return;
+        }
+
+        Logger::Tag("ProcessExecutor")
+            .iFmt("Successfully connected to device: %s",
+                  deviceIp.toStdString().c_str());
+        emit signalConnectStateChanged(ConnectState::Connected);
+      });
+  process->start(adb(), {"connect", deviceIp});
 }
 
-void ProcessExecutor::disconnectDevice() {}
+void ProcessExecutor::disconnectDevice() {
+  Logger::Tag("ProcessExecutor").i("Disconnecting device...");
+
+  QProcess *process = new QProcess(this);
+  connect(process,
+          QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished), this,
+          [this, process](int exitCode, QProcess::ExitStatus) {
+            process->deleteLater();
+
+            if (exitCode != 0) {
+              const QString err = process->readAllStandardError().trimmed();
+              Logger::Tag("ProcessExecutor")
+                  .eFmt("Failed to disconnect device: %s",
+                        err.toStdString().c_str());
+            } else {
+              Logger::Tag("ProcessExecutor").i("Device disconnected");
+            }
+
+            // 无论 adb disconnect 是否成功，逻辑状态都变为 Disconnected
+            emit signalConnectStateChanged(ConnectState::Disconnected);
+          });
+  process->start(adb(), {"disconnect"});
+}
 
 void ProcessExecutor::wakeUpDevice() {
   // 亮屏
