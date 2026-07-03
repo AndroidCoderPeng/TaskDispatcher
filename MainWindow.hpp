@@ -98,6 +98,7 @@ private:
   void onActionScreenOffClicked();
   void onActionOpenTargetAppClicked();
   void onActionKillTargetAppClicked();
+  void onActionRestartAdbClicked();
 
   void onActionTestEmailClicked();
   void onActionTextWxClicked();

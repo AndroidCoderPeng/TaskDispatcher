@@ -117,6 +117,8 @@ MainWindow::MainWindow(QWidget *parent)
           &MainWindow::onActionOpenTargetAppClicked);
   connect(ui->actionKillTargetApp, &QAction::triggered, this,
           &MainWindow::onActionKillTargetAppClicked);
+  connect(ui->actionRestartAdb, &QAction::triggered, this,
+          &MainWindow::onActionRestartAdbClicked);
 
   connect(ui->actionTestEmail, &QAction::triggered, this,
           &MainWindow::onActionTestEmailClicked);
@@ -555,6 +557,10 @@ void MainWindow::onActionKillTargetAppClicked() {
   processExecutorPtr->killTargetApp(packageName);
 }
 
+void MainWindow::onActionRestartAdbClicked() {
+  processExecutorPtr->restartAdb();
+}
+
 void MainWindow::onActionTestEmailClicked() {
   QJsonObject obj = ConfigStore::get().load("emailConfig");
   if (obj.isEmpty()) {
@@ -881,9 +887,11 @@ void MainWindow::slotConnectStateChanged(ConnectState state) {
     ui->usbIconView->setPixmap(QPixmap(":/usb_connected.png"));
     ui->connectDeviceButton->setText("断开设备");
     ToastWidget::showInfo(this, "设备已通过 WiFi 连接，现在可以拔掉 USB 线了");
+    processExecutorPtr->startPeriodicCheck();
   } else {
-    ui->usbStateView->setPixmap(QPixmap(":/usb_disconnected.png"));
+    ui->usbIconView->setPixmap(QPixmap(":/usb_disconnected.png"));
     ui->connectDeviceButton->setText("连接设备");
+    processExecutorPtr->stopPeriodicCheck();
   }
   processExecutorPtr->getConnectedDeviceName(
       [this, state](const QString &device) {

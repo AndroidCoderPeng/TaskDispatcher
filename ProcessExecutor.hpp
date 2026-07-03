@@ -4,6 +4,7 @@
 #include <QObject>
 #include <QProcess>
 #include <QString>
+#include <QTimer>
 
 #include "GlobalDefinition.hpp"
 
@@ -14,11 +15,17 @@ public:
 
   void initDebugPort(std::function<void(bool)> callback);
 
-  void getConnectedDeviceName(std::function<void(QString)> callback);
+  void restartAdb();
 
   void connectDevice(const QString &deviceIp);
 
+  void getConnectedDeviceName(std::function<void(QString)> callback);
+
   void disconnectDevice();
+
+  void startPeriodicCheck(int intervalMs = 5000);
+
+  void stopPeriodicCheck();
 
   void wakeUpDevice();
 
@@ -44,6 +51,8 @@ signals:
   void signalOpenAppFailed(const QString &message);
 
 private:
+  QTimer *chekTimerPtr = nullptr;
+
   QString adb();
 
   void checkConnectState();

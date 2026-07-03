@@ -23,31 +23,6 @@ QString ProcessExecutor::adb() {
 #endif
 }
 
-void ProcessExecutor::getConnectedDeviceName(
-    std::function<void(QString)> callback) {
-  QProcess *process = new QProcess(this);
-  connect(process,
-          QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished), this,
-          [process, callback](int exitCode, QProcess::ExitStatus) {
-            process->deleteLater();
-
-            if (exitCode != 0) {
-              if (callback) {
-                callback("");
-              }
-              return;
-            }
-
-            Logger::Tag("ProcessExecutor")
-                .i("Successfully got connected device name");
-            if (callback) {
-              const QString output = process->readAllStandardOutput().trimmed();
-              callback(output);
-            }
-          });
-  process->start(adb(), {"shell", "getprop", "ro.product.brand"});
-}
-
 void ProcessExecutor::initDebugPort(std::function<void(bool)> callback) {
   QProcess *process = new QProcess(this);
   connect(process,
@@ -75,7 +50,35 @@ void ProcessExecutor::initDebugPort(std::function<void(bool)> callback) {
   process->start(adb(), {"tcpip", "5555"});
 }
 
-void ProcessExecutor::checkConnectState() {}
+void ProcessExecutor::restartAdb() {
+  Logger::Tag("ProcessExecutor").i("Restarting ADB server...");
+  QProcess *kill = new QProcess(this);
+  connect(kill, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
+          this, [this, kill](int, QProcess::ExitStatus) {
+            kill->deleteLater();
+
+            // kill-server 完成后启动 server
+            QProcess *start = new QProcess(this);
+            connect(
+                start,
+                QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
+                this, [this, start](int exitCode, QProcess::ExitStatus) {
+                  start->deleteLater();
+
+                  if (exitCode != 0) {
+                    const QString err = start->readAllStandardError().trimmed();
+                    Logger::Tag("ProcessExecutor")
+                        .eFmt("Failed to restart ADB server: %s",
+                              err.toStdString().c_str());
+                  } else {
+                    Logger::Tag("ProcessExecutor")
+                        .i("ADB server restarted successfully");
+                  }
+                });
+            start->start(adb(), {"start-server"});
+          });
+  kill->start(adb(), {"kill-server"});
+}
 
 void ProcessExecutor::connectDevice(const QString &deviceIp) {
   emit signalConnectStateChanged(ConnectState::Connecting);
@@ -105,6 +108,29 @@ void ProcessExecutor::connectDevice(const QString &deviceIp) {
   process->start(adb(), {"connect", deviceIp});
 }
 
+void ProcessExecutor::getConnectedDeviceName(
+    std::function<void(QString)> callback) {
+  QProcess *process = new QProcess(this);
+  connect(process,
+          QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished), this,
+          [process, callback](int exitCode, QProcess::ExitStatus) {
+            process->deleteLater();
+
+            if (exitCode != 0) {
+              if (callback) {
+                callback("");
+              }
+              return;
+            }
+
+            if (callback) {
+              const QString output = process->readAllStandardOutput().trimmed();
+              callback(output);
+            }
+          });
+  process->start(adb(), {"shell", "getprop", "ro.product.brand"});
+}
+
 void ProcessExecutor::disconnectDevice() {
   Logger::Tag("ProcessExecutor").i("Disconnecting device...");
 
@@ -127,6 +153,50 @@ void ProcessExecutor::disconnectDevice() {
             emit signalConnectStateChanged(ConnectState::Disconnected);
           });
   process->start(adb(), {"disconnect"});
+}
+
+void ProcessExecutor::startPeriodicCheck(int intervalMs) {
+  if (!chekTimerPtr) {
+    chekTimerPtr = new QTimer(this);
+    connect(chekTimerPtr, &QTimer::timeout, this,
+            &ProcessExecutor::checkConnectState);
+  }
+  chekTimerPtr->start(intervalMs);
+  Logger::Tag("ProcessExecutor")
+      .dFmt("Periodic connection check started, interval=%d ms", intervalMs);
+}
+
+void ProcessExecutor::checkConnectState() {
+  QProcess *process = new QProcess(this);
+  connect(process,
+          QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished), this,
+          [this, process](int exitCode, QProcess::ExitStatus) {
+            process->deleteLater();
+
+            if (exitCode != 0) {
+              Logger::Tag("ProcessExecutor")
+                  .w("Failed to check device connection state");
+              emit signalConnectStateChanged(ConnectState::Disconnected);
+              return;
+            }
+
+            const QString output = process->readAllStandardOutput().trimmed();
+            // "adb devices" 输出中，有 "\tdevice" 的行表示设备已连接
+            const bool connected = output.contains("\tdevice");
+
+            if (!connected) {
+              Logger::Tag("ProcessExecutor").w("Device disconnected detected");
+              emit signalConnectStateChanged(ConnectState::Disconnected);
+            }
+          });
+  process->start(adb(), {"devices"});
+}
+
+void ProcessExecutor::stopPeriodicCheck() {
+  if (chekTimerPtr) {
+    chekTimerPtr->stop();
+    Logger::Tag("ProcessExecutor").i("Periodic connection check stopped");
+  }
 }
 
 void ProcessExecutor::wakeUpDevice() {

@@ -317,6 +317,8 @@
                 <addaction name="separator"/>
                 <addaction name="actionOpenTargetApp"/>
                 <addaction name="actionKillTargetApp"/>
+                <addaction name="separator"/>
+                <addaction name="actionRestartAdb"/>
             </widget>
             <widget class="QMenu" name="menuHelp">
                 <property name="title">
@@ -465,6 +467,11 @@
         <action name="actionKillTargetApp">
             <property name="text">
                 <string>关闭目标应用</string>
+            </property>
+        </action>
+        <action name="actionRestartAdb">
+            <property name="text">
+                <string>重启ADB服务</string>
             </property>
         </action>
         <action name="actionTestEmail">
