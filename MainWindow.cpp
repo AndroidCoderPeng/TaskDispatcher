@@ -1145,13 +1145,34 @@ void MainWindow::changeEvent(QEvent *event) {
 }
 
 void MainWindow::closeEvent(QCloseEvent *event) {
-  // 关闭窗口时最小化到托盘，而非直接退出
-  hide();
-  if (trayIcon) {
-    trayIcon->showMessage("任务调度器", "程序仍在后台运行",
-                          QSystemTrayIcon::Information, 2000);
+  QMessageBox msgBox(this);
+  msgBox.setWindowTitle("关闭窗口");
+  msgBox.setText("请选择操作");
+  msgBox.setIcon(QMessageBox::Question);
+
+  QPushButton *trayBtn =
+      msgBox.addButton("最小化到托盘", QMessageBox::AcceptRole);
+  msgBox.addButton("直接退出", QMessageBox::DestructiveRole);
+
+  msgBox.setDefaultButton(trayBtn);
+  msgBox.exec();
+
+  if (msgBox.clickedButton() == trayBtn) {
+    hide();
+    if (trayIcon) {
+      trayIcon->showMessage("任务调度器", "程序仍在后台运行",
+                            QSystemTrayIcon::Information, 2000);
+    }
+    event->ignore();
+  } else {
+    if (taskExecutorPtr && taskExecutorPtr->isRunning()) {
+      taskExecutorPtr->stop();
+    }
+    if (trayIcon) {
+      trayIcon->hide();
+    }
+    event->accept();
   }
-  event->ignore();
 }
 
 MainWindow::~MainWindow() { delete ui; }
