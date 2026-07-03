@@ -349,7 +349,127 @@
         </div>
         <div class="qa-body">
 
-            <!-- ========== PART 1 : 限制说明 ========== -->
+            <!-- ========== PART 1 : 无线连接指南 ========== -->
+            <div class="section-divider">📲 TaskDispatcher · 无线 ADB 初次连接步骤</div>
+
+            <div class="qa-item">
+                <div class="step-title">
+                    <span class="step-num">1</span> 准备工作
+                </div>
+                <div class="step-desc">
+                    <p>确保满足以下条件：</p>
+                    <ul>
+                        <li>一台 Windows 电脑（已安装 TaskDispatcher，内置 ADB 工具）</li>
+                        <li>一部 Android 手机（版本 8~16 均可），<strong>USB 数据线</strong></li>
+                        <li>手机和电脑连接<strong>同一个 Wi-Fi 网络</strong>（同一网段）</li>
+                        <li>手机已开启<strong>开发者选项</strong>和 <strong>USB 调试</strong></li>
+                    </ul>
+                    <div class="tip-note">
+                        💡 如何开启开发者选项：设置 → 我的设备 → 全部参数 → 连续点击「OS版本 / MIUI版本」7 次。<br>
+                        返回设置 → 更多设置 → 开发者选项 → 打开 <strong>USB 调试</strong>。
+                    </div>
+                </div>
+            </div>
+
+            <div class="qa-item">
+                <div class="step-title">
+                    <span class="step-num">2</span> 用 USB 线连接手机与电脑
+                </div>
+                <div class="step-desc">
+                    <p>使用数据线将手机连接到电脑。手机上会弹出 <strong>「允许 USB 调试？」</strong> 对话框，勾选 <strong>「一律允许」</strong> 并点击「确定」。</p>
+                    <p>确保连接模式为 <strong>「文件传输 (MTP)」</strong>（部分旧机型需要手动切换）。</p>
+                    <div class="warn-note">
+                        ⚠️ 小米 MIUI / HyperOS 用户：务必登录小米账号并联网，然后在开发者选项中开启 <strong>「USB 调试（安全设置）」</strong>，否则后续 <code>input
+                            tap</code> 等指令将被拦截。详见下方限制说明。
+                    </div>
+                </div>
+            </div>
+
+            <div class="qa-item">
+                <div class="step-title">
+                    <span class="step-num">3</span> 点击「连接手机」按钮
+                </div>
+                <div class="step-desc">
+                    <p>启动 TaskDispatcher 程序，点击右下角的 <strong>「连接手机」</strong> 按钮。</p>
+                    <p>程序将自动将手机 ADB 从 USB 模式切换为无线模式</p>
+                    <div class="tip-note">
+                        💡 如果弹出错误提示「请重新插拔手机 USB 线，并在手机上选择传输文件模式」，说明 ADB 未正确识别手机。请检查 USB 调试授权和连接模式后重试。
+                    </div>
+                </div>
+            </div>
+
+            <div class="qa-item">
+                <div class="step-title">
+                    <span class="step-num">4</span> 输入手机局域网 IP 地址
+                </div>
+                <div class="step-desc">
+                    <p>在弹出的 <strong>「无线连接」</strong> 对话框中输入手机的 Wi-Fi IP 地址并点击「确定」。</p>
+                    <p>查看手机 IP：<strong>设置 → WLAN → 点击当前连接的 Wi-Fi → 查看 IP 地址</strong>（例如 <code>192.168.1.105</code>）。</p>
+                    <p>点击「确定」后，程序将连接设备。</p>
+                    <div class="warn-note">
+                        ⚠️ 手机和电脑必须在<strong>同一局域网</strong>（连接同一个 Wi-Fi），否则无法连接。
+                    </div>
+                </div>
+            </div>
+
+            <div class="qa-item">
+                <div class="step-title">
+                    <span class="step-num">5</span> 连接成功，拔掉 USB
+                </div>
+                <div class="step-desc">
+                    <p>连接成功后，程序会弹出提示 <strong>「设备已通过 WiFi 连接，现在可以拔掉 USB 线了」</strong>。此时底部状态栏显示
+                        <strong>「已连接」</strong>，按钮文字变为 <strong>「断开设备」</strong>。
+                    </p>
+                    <p>拔掉 USB 数据线后，只要手机和电脑保持同一 Wi-Fi 网络，即可正常使用 TaskDispatcher 的全部功能。</p>
+                    <div class="success-note">
+                        ✅ 输入的 IP 地址会被自动保存，下次连接无需重新输入，程序会使用上次的 IP 自动连接。
+                    </div>
+                    <div class="tip-note">
+                        💡 程序会每 <strong>5 秒</strong> 自动检测连接状态。若设备意外断开，会自动尝试重连（最多 3 次），重连均失败后会发送通知提醒用户手动处理。
+                    </div>
+                </div>
+            </div>
+
+            <div class="qa-item">
+                <div class="step-title">
+                    <span class="step-num">6</span> 验证功能是否正常
+                </div>
+                <div class="step-desc">
+                    <p>通过程序菜单 <strong>「指令(&amp;C)」</strong> 可验证无线 ADB 各项功能：</p>
+                    <ul>
+                        <li><strong>亮屏</strong>：唤醒手机屏幕并自动上滑解锁</li>
+                        <li><strong>截屏</strong>：获取当前手机屏幕截图并发送通知</li>
+                        <li><strong>息屏</strong>：关闭手机屏幕</li>
+                        <li><strong>打开目标APP</strong>：在手机上启动指定的应用</li>
+                        <li><strong>关闭目标APP</strong>：在手机上强制关闭指定的应用</li>
+                        <li><strong>重启ADB</strong>：重启 ADB 服务以解决异常问题</li>
+                    </ul>
+                    <p>建议先点击 <strong>「指令 → 亮屏」</strong>，如果手机屏幕亮起并自动解锁，说明无线 ADB 完全正常，所有链式任务均可执行。</p>
+                </div>
+            </div>
+
+            <!-- 常见问题 -->
+            <div class="qa-item">
+                <div class="step-title">
+                    <span class="step-num">⁉️</span> 常见问题（无线连接）
+                </div>
+                <div class="step-desc">
+                    <ul>
+                        <li><strong>问：无线连接提示无法连接？</strong><br>
+                            答：检查手机和电脑是否在同一 Wi-Fi 下；关闭手机 VPN 或热点；尝试点击「指令 → 重启ADB」后重试。</li>
+                        <li><strong>问：手机重启后无线 ADB 失效了？</strong><br>
+                            答：正常现象，手机重启后需重新插 USB 线，点击「连接手机」按钮让程序自动切换为无线模式。</li>
+                        <li><strong>问：TaskDispatcher 可以自动重连吗？</strong><br>
+                            答：可以。程序会每隔 5 秒检测连接状态，断线后自动尝试重连（最多 3 次），3 次均失败后会发送通知提醒用户手动处理。</li>
+                        <li><strong>问：无线 ADB 比 USB 慢吗？</strong><br>
+                            答：日常指令（唤醒、启动 APP、截图）延迟差别极小，不影响 TaskDispatcher 的链式任务执行。</li>
+                        <li><strong>问：点击「连接手机」后提示 ADB 初始化失败？</strong><br>
+                            答：请确认手机已通过 USB 连接且授权了调试权限，USB 连接模式为「文件传输 (MTP)」。若仍失败，尝试「指令 → 重启ADB」后重连。</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- ========== PART 2 : 限制说明 ========== -->
             <div class="section-divider">🔒 MIUI / HyperOS ADB 限制说明</div>
 
             <div class="qa-item">
@@ -375,14 +495,12 @@
                     <div class="warn-note">
                         ⚠️ 「USB 调试（安全设置）」和「USB 安装」通常<strong>要求登录小米账号且联网</strong>，部分机型还需插 SIM 卡。选项可能置灰，需先登账号。
                     </div>
-                    <p>开启后重新插拔 USB 线，选择 <strong>文件传输 (MTP)</strong> 模式，然后执行：</p>
-                    <div class="code-block">adb kill-server && adb start-server<br>adb shell input tap 500 1000</div>
-                    <p>确认是否有响应。如果仍然无效，继续看下一个问题。</p>
+                    <p>开启后通过 TaskDispatcher <strong>「指令 → 亮屏」</strong> 测试：如果手机亮起并解锁，说明权限已生效。如果仍然无效，继续看下一个问题。</p>
                 </div>
             </div>
 
             <div class="qa-item">
-                <div class="question">已经开启了“USB 调试(安全设置)”还是不行，怎么办？</div>
+                <div class="question">已经开启了"USB 调试(安全设置)"还是不行，怎么办？</div>
                 <div class="answer">
                     <ul>
                         <li><strong>屏幕需解锁</strong>：锁屏状态下 <code>input</code> 事件通常被忽略，请先点亮屏幕并解锁。</li>
@@ -397,7 +515,7 @@
             </div>
 
             <div class="qa-item">
-                <div class="question">“USB 调试(安全设置)”选项是灰色的，点不了怎么办？</div>
+                <div class="question">"USB 调试(安全设置)"选项是灰色的，点不了怎么办？</div>
                 <div class="answer">
                     <p>这是最常见的情况。原因和解决：</p>
                     <ul>
@@ -423,122 +541,6 @@
                         <li>部分 HyperOS 内测版对注入频率有限制，频繁 <code>input tap</code> 可能会被临时屏蔽，稍等几秒再试。</li>
                     </ul>
                     <p>如果方便提供具体的系统版本号（例如 HyperOS 1.0.2.0.UMKCNXM），可以给出更精确的建议。</p>
-                </div>
-            </div>
-
-            <!-- ========== PART 2 : 无线连接指南 ========== -->
-            <div class="section-divider">📲 TaskDispatcher · 无线 ADB 初次连接步骤</div>
-
-            <div class="qa-item">
-                <div class="step-title">
-                    <span class="step-num">1</span> 准备工作
-                </div>
-                <div class="step-desc">
-                    <p>确保满足以下条件：</p>
-                    <ul>
-                        <li>一台 Windows 电脑（已安装 TaskDispatcher，内置 ADB）</li>
-                        <li>一部 Android 手机（版本 8~16 均可），USB 数据线</li>
-                        <li>手机和电脑连接<strong>同一个 Wi-Fi 网络</strong>（同一网段）</li>
-                        <li>手机已开启<strong>开发者选项</strong>和 <strong>USB 调试</strong></li>
-                    </ul>
-                    <div class="tip-note">
-                        💡 如何开启开发者选项：设置 → 我的设备 → 全部参数 → 连续点击「OS版本 / MIUI版本」7 次。<br>
-                        返回设置 → 更多设置 → 开发者选项 → 打开 <strong>USB 调试</strong>。
-                    </div>
-                </div>
-            </div>
-
-            <div class="qa-item">
-                <div class="step-title">
-                    <span class="step-num">2</span> 用 USB 线连接手机与电脑
-                </div>
-                <div class="step-desc">
-                    <p>使用数据线将手机连接到电脑。手机上会弹出 <strong>「允许 USB 调试？」</strong> 对话框，勾选 <strong>「一律允许」</strong> 并点击「确定」。</p>
-                    <p>确保连接模式为 <strong>「文件传输 (MTP)」</strong>（部分旧机型需要手动切换）。</p>
-                    <div class="warn-note">
-                        ⚠️ 小米 MIUI / HyperOS 用户：务必登录小米账号并联网，然后在开发者选项中开启 <strong>「USB 调试（安全设置）」</strong>，否则后续 <code>input
-                            tap</code> 等指令将被拦截。详见上方限制说明。
-                    </div>
-                </div>
-            </div>
-
-            <div class="qa-item">
-                <div class="step-title">
-                    <span class="step-num">3</span> 确保手机已开启 ADB 无线连接
-                </div>
-                <div class="step-desc">
-                    <p>确保手机已开启 <strong>开发者选项</strong> 和 <strong>USB 调试</strong>，并已准备好无线 ADB 连接：</p>
-                    <ul>
-                        <li><strong>方式一（通用）</strong>：使用 USB 线连接手机到电脑，在电脑命令行执行 <code>adb tcpip 5555</code>，然后拔掉 USB 线。</li>
-                        <li><strong>方式二（Android 11+）</strong>：在开发者选项中直接开启「无线调试」功能。</li>
-                    </ul>
-                    <p>手机重启后无线 ADB 会失效，需要重新执行上述操作。</p>
-                </div>
-            </div>
-
-            <div class="qa-item">
-                <div class="step-title">
-                    <span class="step-num">4</span> 获取手机局域网 IP
-                </div>
-                <div class="step-desc">
-                    <p>查看手机的 Wi-Fi IP 地址：</p>
-                    <ul>
-                        <li>设置 → WLAN → 点击当前连接的 Wi-Fi → 查看 <strong>IP 地址</strong>（例如 <code>192.168.1.105</code>）</li>
-                    </ul>
-                    <div class="warn-note">
-                        ⚠️ 手机和电脑必须在<strong>同一局域网</strong>（连接同一个 Wi-Fi），否则无法连接。
-                    </div>
-                </div>
-            </div>
-
-            <div class="qa-item">
-                <div class="step-title">
-                    <span class="step-num">5</span> 在 TaskDispatcher 中输入 IP 并连接
-                </div>
-                <div class="step-desc">
-                    <p>启动 TaskDispatcher 程序，点击底部的 <strong>「连接手机」</strong> 按钮。</p>
-                    <p>在弹出的「无线连接」对话框中输入手机 IP 地址，点击「确定」。</p>
-                    <p>程序将自动执行：</p>
-                    <div class="code-block">adb connect 192.168.1.105:5555</div>
-                    <p>连接成功后，底部状态栏会显示 <strong>「已连接」</strong> 状态。</p>
-                    <div class="success-note">
-                        ✅ 如果看到 <code>connected to 192.168.1.105:5555</code>，说明无线 ADB 已建立，可以开始使用 TaskDispatcher 的全部功能。
-                    </div>
-                </div>
-            </div>
-
-            <div class="qa-item">
-                <div class="step-title">
-                    <span class="step-num">6</span> 验证功能是否正常
-                </div>
-                <div class="step-desc">
-                    <p>在 TaskDispatcher 菜单中点击 <strong>「指令」→「亮屏」</strong>，程序会发送以下指令：</p>
-                    <div class="code-block">adb shell input keyevent KEYCODE_WAKEUP</div>
-                    <p>如果手机屏幕亮起（无锁屏则直接进入桌面），表示无线 ADB 工作正常，所有 <code>monkey</code>、<code>tap</code>、<code>swipe</code>
-                        指令均可正常下发。</p>
-                    <p>你也可以手动在命令行验证：</p>
-                    <div class="code-block">adb shell input tap 500 900</div>
-                    <p>观察手机是否有触摸响应。</p>
-                </div>
-            </div>
-
-            <!-- 常见问题 -->
-            <div class="qa-item">
-                <div class="step-title">
-                    <span class="step-num">⁉️</span> 常见问题（无线连接）
-                </div>
-                <div class="step-desc">
-                    <ul>
-                        <li><strong>问：无线连接提示 <code>cannot connect to ... :5555</code>？</strong><br>
-                            答：检查手机和电脑是否在同一 Wi-Fi 下；关闭手机 VPN 或热点；尝试在电脑上执行 <code>adb kill-server && adb
-                                start-server</code> 后重试。</li>
-                        <li><strong>问：手机重启后无线 ADB 失效了？</strong><br>
-                            答：正常现象，手机重启后需重新插 USB 线执行一次「切换为无线模式」（步骤 4）。</li>
-                        <li><strong>问：TaskDispatcher 可以自动重连吗？</strong><br>
-                            答：可以。程序会每隔 30 秒检测连接状态，断线后自动尝试 <code>adb connect</code> 重连，无需手动干预。</li>
-                        <li><strong>问：无线 ADB 比 USB 慢吗？</strong><br>
-                            答：日常指令（唤醒、启动 APP、点击）延迟差别极小，不影响 TaskDispatcher 的链式任务执行。</li>
-                    </ul>
                 </div>
             </div>
 
