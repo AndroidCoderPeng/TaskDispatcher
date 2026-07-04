@@ -68,7 +68,7 @@ MainWindow::MainWindow(QWidget *parent)
     } else if (method == "email") {
       ui->emailRadioButton->setChecked(true);
     } else {
-      Logger::Tag("MainWindow").i("No notify method config found");
+      Logger::Tag("MainWindow").w("No notify method config found");
     }
   }
 
