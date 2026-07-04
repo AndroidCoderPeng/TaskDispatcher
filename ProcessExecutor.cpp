@@ -71,7 +71,7 @@ void ProcessExecutor::restartAdb() {
             connect(
                 start,
                 QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
-                this, [this, start](int exitCode, QProcess::ExitStatus) {
+                this, [start](int exitCode, QProcess::ExitStatus) {
                   start->deleteLater();
 
                   if (exitCode != 0) {
@@ -182,11 +182,15 @@ void ProcessExecutor::resolveLauncherActivity(
               return;
             }
 
+            const QStringList lines = output.split('\n', Qt::SkipEmptyParts);
+            const QString activity =
+                lines.isEmpty() ? QString() : lines.last().trimmed();
+
             Logger::Tag("ProcessExecutor")
                 .dFmt("Resolved launcher activity: %s",
-                      output.toStdString().c_str());
+                      activity.toStdString().c_str());
             if (callback) {
-              callback(output);
+              callback(activity);
             }
           });
 
@@ -196,9 +200,8 @@ void ProcessExecutor::resolveLauncherActivity(
   if (!connectedDevice.isEmpty()) {
     args << "-s" << connectedDevice;
   }
-  args << "shell"
-       << QString("cmd package resolve-activity --brief %1 | tail -n 1")
-              .arg(packageName);
+  args << "shell" << "cmd" << "package" << "resolve-activity"
+       << "--brief" << packageName;
   process->start(selectExecutor(), args);
 }
 
