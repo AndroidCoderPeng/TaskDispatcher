@@ -302,6 +302,12 @@ void ProcessExecutor::wakeUpDevice() {
         [this, wm](int, QProcess::ExitStatus) {
           wm->deleteLater();
           const QString output = wm->readAllStandardOutput().trimmed();
+          if (output.isEmpty()) {
+            Logger::Tag("ProcessExecutor")
+                .e("Failed to get screen size, output is empty");
+            emit signalConnectStateChanged(ConnectState::Disconnected);
+            return;
+          }
           Logger::Tag("ProcessExecutor")
               .dFmt("Screen size: %s", output.toStdString().c_str());
 
@@ -325,7 +331,7 @@ void ProcessExecutor::wakeUpDevice() {
                   this, [this, swipe](int, QProcess::ExitStatus) {
                     swipe->deleteLater();
                     Logger::Tag("ProcessExecutor")
-                        .d("Device woken up, waiting 3s for stabilization...");
+                        .i("Device woken up, waiting 3s for stabilization...");
                     // 等 3 秒让屏幕稳定，再通知调用方
                     QTimer::singleShot(
                         3000, this, [this]() { emit signalDeviceWokenUp(); });
