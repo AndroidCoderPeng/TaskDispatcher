@@ -78,8 +78,18 @@ void ProcessExecutor::checkConnectState() {
             if (devicePresent) {
               // 有设备在线
               if (lastKnownState != ConnectState::Connected) {
-                lastKnownState = ConnectState::Connected;
-                emit signalConnectStateChanged(ConnectState::Connected);
+                if (!firstCheckDone) {
+                  // 程序启动后首次检测到设备，很可能是上次会话遗留的连接
+                  // 自动断开以重置连接状态，确保每次启动都从干净的连接开始
+                  firstCheckDone = true;
+                  Logger::Tag("ProcessExecutor")
+                      .i("Auto-disconnecting leftover connection from previous "
+                         "session");
+                  disconnectDevice();
+                } else if (lastKnownState != ConnectState::Connected) {
+                  lastKnownState = ConnectState::Connected;
+                  emit signalConnectStateChanged(ConnectState::Connected);
+                }
               }
             } else {
               // 无设备

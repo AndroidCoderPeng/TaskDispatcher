@@ -59,6 +59,7 @@ private:
   QString connectedDevice;
   // 追踪上次状态
   ConnectState lastKnownState = ConnectState::Disconnected;
+  bool firstCheckDone = false;
 
   QString selectExecutor();
 
