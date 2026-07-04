@@ -179,6 +179,8 @@ MainWindow::MainWindow(QWidget *parent)
 
   // 创建进程执行器并连接信号
   processExecutorPtr = new ProcessExecutor(this);
+  connect(processExecutorPtr, &ProcessExecutor::signalAdbNotFound, this,
+          &MainWindow::slotAdbNotFound);
   connect(processExecutorPtr, &ProcessExecutor::signalConnectStateChanged, this,
           &MainWindow::slotConnectStateChanged);
   connect(processExecutorPtr, &ProcessExecutor::signalScreenCaptured, this,
@@ -959,6 +961,12 @@ void MainWindow::slotHolidaySkipped() {
     }
   }
   sendMessageToUser("普天同庆", "今天不上班~，出去玩玩吧！");
+}
+
+void MainWindow::slotAdbNotFound() {
+  QMessageBox::warning(this, "缺少 ADB",
+                       "未在系统中检测到 adb，请安装 android-tools-adb：\n"
+                       "sudo apt install adb");
 }
 
 void MainWindow::slotConnectStateChanged(ConnectState state) {

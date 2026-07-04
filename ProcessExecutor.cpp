@@ -11,6 +11,16 @@
 #include <QtGlobal>
 
 ProcessExecutor::ProcessExecutor(QObject *parent) : QObject(parent) {
+#ifndef Q_OS_WIN
+  QTimer::singleShot(0, this, [this]() {
+    if (QStandardPaths::findExecutable("adb").isEmpty()) {
+      Logger::Tag("ProcessExecutor")
+          .e("ADB not found in system PATH! "
+             "Please install adb (Ubuntu: sudo apt install adb)");
+      emit signalAdbNotFound();
+    }
+  });
+#endif
   Logger::Tag("ProcessExecutor")
       .dFmt("Using adb path: %s", selectExecutor().toStdString().c_str());
 }

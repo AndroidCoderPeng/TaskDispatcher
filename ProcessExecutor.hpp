@@ -44,6 +44,8 @@ public:
   void screenOff();
 
 signals:
+  void signalAdbNotFound();
+
   void signalConnectStateChanged(ConnectState state);
 
   void signalDeviceWokenUp();
