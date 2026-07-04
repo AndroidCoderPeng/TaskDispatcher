@@ -7,6 +7,7 @@
 #include <QJsonObject>
 #include <QNetworkReply>
 #include <QNetworkRequest>
+#include <QTimer>
 #include <QUrl>
 
 // CDN 镜像源列表
@@ -22,7 +23,19 @@ ChinaHolidayManager *ChinaHolidayManager::get() {
 }
 
 ChinaHolidayManager::ChinaHolidayManager(QObject *parent)
-    : QObject(parent), _networkManagerPtr(new QNetworkAccessManager(this)) {}
+    : QObject(parent), _networkManagerPtr(new QNetworkAccessManager(this)) {
+#ifndef Q_OS_WIN
+  QTimer::singleShot(0, this, [this]() {
+    // 检查 OpenSSL 是否可用
+    if (!QSslSocket::supportsSsl()) {
+      Logger::Tag("ProcessExecutor")
+          .e("OpenSSL not found! Qt Network module requires libssl. "
+             "Ubuntu: sudo apt install libssl1.1");
+      emit signalSslNotFound();
+    }
+  });
+#endif
+}
 
 void ChinaHolidayManager::updateChinaHolidayData() {
   // 先尝试从缓存加载

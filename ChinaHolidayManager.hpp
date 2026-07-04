@@ -22,6 +22,10 @@ public:
   bool isWorkday(const QDate &date) const;
 
 signals:
+#ifndef Q_OS_WIN
+  void signalSslNotFound();
+#endif
+
   void signalSyncSuccess(const QString &message);
 
   void signalSyncError(const QString &message);

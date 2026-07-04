@@ -27,6 +27,10 @@ protected:
   void closeEvent(QCloseEvent *event) override;
 
 public slots:
+#ifndef Q_OS_WIN
+  void slotSslNotFound();
+#endif
+
   void slotSyncSuccess(const QString &message);
 
   void slotSyncError(const QString &error);

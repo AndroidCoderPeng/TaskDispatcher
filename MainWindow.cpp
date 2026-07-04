@@ -162,6 +162,10 @@ MainWindow::MainWindow(QWidget *parent)
 
   // 连接节假日数据同步信号
   const auto holidayManager = ChinaHolidayManager::get();
+#ifndef Q_OS_WIN
+  connect(holidayManager, &ChinaHolidayManager::signalSslNotFound, this,
+          &MainWindow::slotSslNotFound);
+#endif
   connect(holidayManager, &ChinaHolidayManager::signalSyncSuccess, this,
           &MainWindow::slotSyncSuccess);
   connect(holidayManager, &ChinaHolidayManager::signalSyncError, this,
@@ -180,8 +184,10 @@ MainWindow::MainWindow(QWidget *parent)
 
   // 创建进程执行器并连接信号
   processExecutorPtr = new ProcessExecutor(this);
+#ifndef Q_OS_WIN
   connect(processExecutorPtr, &ProcessExecutor::signalExecutorNotFound, this,
           &MainWindow::slotExecutorNotFound);
+#endif
   connect(processExecutorPtr, &ProcessExecutor::signalConnectStateChanged, this,
           &MainWindow::slotConnectStateChanged);
   connect(processExecutorPtr, &ProcessExecutor::signalScreenCaptured, this,
@@ -884,6 +890,13 @@ void MainWindow::onCustomAction(const QListWidgetItem *item,
   }
 }
 
+#ifndef Q_OS_WIN
+void MainWindow::slotSslNotFound() {
+  QMessageBox::critical(this, "错误",
+                        "未在系统中检测到 OpenSSL 库，请安装 OpenSSL");
+}
+#endif
+
 void MainWindow::slotSyncSuccess(const QString &message) {
   QMessageBox::information(this, "提示", message);
 }
@@ -964,11 +977,13 @@ void MainWindow::slotHolidaySkipped() {
   sendMessageToUser("普天同庆", "今天不上班~，出去玩玩吧！");
 }
 
+#ifndef Q_OS_WIN
 void MainWindow::slotExecutorNotFound() {
   QMessageBox::warning(this, "缺少 ADB",
                        "未在系统中检测到 adb，请安装 adb：\n"
                        "sudo apt install adb");
 }
+#endif
 
 void MainWindow::slotConnectStateChanged(ConnectState state) {
   currentState = state;
