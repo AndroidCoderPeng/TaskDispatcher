@@ -65,9 +65,10 @@ MainWindow::MainWindow(QWidget *parent)
         saved.contains("method") ? saved["method"].toString() : QString();
     if (method == "wx") {
       ui->wxRadioButton->setChecked(true);
-    } else {
-      // 默认选中邮箱通知
+    } else if (method == "email") {
       ui->emailRadioButton->setChecked(true);
+    } else {
+      Logger::Tag("MainWindow").i("No notify method config found");
     }
   }
 
