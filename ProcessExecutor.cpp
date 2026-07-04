@@ -212,6 +212,9 @@ void ProcessExecutor::resolveLauncherActivity(
   }
   args << "shell" << "cmd" << "package" << "resolve-activity"
        << "--brief" << packageName;
+  Logger::Tag("ProcessExecutor")
+      .dFmt("%s %s", selectExecutor().toStdString().c_str(),
+            args.join(' ').toStdString().c_str());
   process->start(selectExecutor(), args);
 }
 
