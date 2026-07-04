@@ -893,7 +893,7 @@ void MainWindow::onCustomAction(const QListWidgetItem *item,
 #ifndef Q_OS_WIN
 void MainWindow::slotSslNotFound() {
   QMessageBox::critical(this, "错误",
-                        "未在系统中检测到 OpenSSL 库，请安装 OpenSSL");
+                        "未在系统中检测到 OpenSSL 库，请安装1.1版本的 OpenSSL");
 }
 #endif
 

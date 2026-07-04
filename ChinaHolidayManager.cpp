@@ -84,22 +84,9 @@ void ChinaHolidayManager::fetchHolidayData() {
                 reply->errorString().toStdString().c_str());
 
 #ifndef Q_OS_WIN
-      // 判断是否是 SSL/TLS 相关错误
       if (errorCode == QNetworkReply::SslHandshakeFailedError) {
-        // 进一步检查是否因为缺少 OpenSSL 库
-        if (!QSslSocket::supportsSsl()) {
-          Logger::Tag("ChinaHolidayManager")
-              .e("OpenSSL library not found by Qt. "
-                 "On Ubuntu 20.04: sudo apt install libssl1.1\n"
-                 "On Ubuntu 22.04+: sudo apt install libssl3");
-          emit signalSslNotFound();
-          return; // SSL 彻底不可用，停止重试
-        } else {
-          // supportsSsl 为 true 但仍然握手失败，可能是证书问题
-          Logger::Tag("ChinaHolidayManager")
-              .e("SSL handshake failed despite SSL being available. "
-                 "Check CA certificates or network proxy.");
-        }
+        emit signalSslNotFound();
+        return; // SSL 彻底不可用，停止重试
       }
 #endif
 
