@@ -21,6 +21,9 @@ ProcessExecutor::ProcessExecutor(QObject *parent) : QObject(parent) {
     }
   });
 #endif
+
+  startPeriodicCheck();
+  QTimer::singleShot(0, this, &ProcessExecutor::checkConnectState);
   Logger::Tag("ProcessExecutor")
       .dFmt("Using adb path: %s", selectExecutor().toStdString().c_str());
 }
@@ -40,6 +43,60 @@ QStringList ProcessExecutor::appendArgs(const QStringList &args) const {
   QStringList result;
   result << "-s" << connectedDevice << args;
   return result;
+}
+
+void ProcessExecutor::startPeriodicCheck(int intervalMs) {
+  if (!chekTimerPtr) {
+    chekTimerPtr = new QTimer(this);
+    connect(chekTimerPtr, &QTimer::timeout, this,
+            &ProcessExecutor::checkConnectState);
+  }
+  chekTimerPtr->start(intervalMs);
+  Logger::Tag("ProcessExecutor")
+      .dFmt("Periodic connection check started, interval=%d ms", intervalMs);
+}
+
+void ProcessExecutor::checkConnectState() {
+  QProcess *process = new QProcess(this);
+  connect(process,
+          QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished), this,
+          [this, process](int exitCode, QProcess::ExitStatus) {
+            process->deleteLater();
+
+            if (exitCode != 0) {
+              // adb 命令本身失败
+              if (lastKnownState != ConnectState::Disconnected) {
+                lastKnownState = ConnectState::Disconnected;
+                emit signalConnectStateChanged(ConnectState::Disconnected);
+              }
+              return;
+            }
+
+            const QString output = process->readAllStandardOutput().trimmed();
+            const bool devicePresent = output.contains("\tdevice");
+
+            if (devicePresent) {
+              // 有设备在线
+              if (lastKnownState != ConnectState::Connected) {
+                lastKnownState = ConnectState::Connected;
+                emit signalConnectStateChanged(ConnectState::Connected);
+              }
+            } else {
+              // 无设备
+              if (lastKnownState != ConnectState::Disconnected) {
+                lastKnownState = ConnectState::Disconnected;
+                emit signalConnectStateChanged(ConnectState::Disconnected);
+              }
+            }
+          });
+  process->start(selectExecutor(), {"devices"});
+}
+
+void ProcessExecutor::stopPeriodicCheck() {
+  if (chekTimerPtr) {
+    chekTimerPtr->stop();
+    Logger::Tag("ProcessExecutor").i("Periodic connection check stopped");
+  }
 }
 
 void ProcessExecutor::initDebugPort(std::function<void(bool)> callback) {
@@ -97,50 +154,6 @@ void ProcessExecutor::restartAdb() {
             start->start(selectExecutor(), {"start-server"});
           });
   kill->start(selectExecutor(), {"kill-server"});
-}
-
-void ProcessExecutor::startPeriodicCheck(int intervalMs) {
-  if (!chekTimerPtr) {
-    chekTimerPtr = new QTimer(this);
-    connect(chekTimerPtr, &QTimer::timeout, this,
-            &ProcessExecutor::checkConnectState);
-  }
-  chekTimerPtr->start(intervalMs);
-  Logger::Tag("ProcessExecutor")
-      .dFmt("Periodic connection check started, interval=%d ms", intervalMs);
-}
-
-void ProcessExecutor::checkConnectState() {
-  QProcess *process = new QProcess(this);
-  connect(process,
-          QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished), this,
-          [this, process](int exitCode, QProcess::ExitStatus) {
-            process->deleteLater();
-
-            if (exitCode != 0) {
-              Logger::Tag("ProcessExecutor")
-                  .w("Failed to check device connection state");
-              emit signalConnectStateChanged(ConnectState::Disconnected);
-              return;
-            }
-
-            const QString output = process->readAllStandardOutput().trimmed();
-            // "adb devices" 输出中，有 "\tdevice" 的行表示设备已连接
-            const bool connected = output.contains("\tdevice");
-
-            if (!connected) {
-              Logger::Tag("ProcessExecutor").w("Device disconnected detected");
-              emit signalConnectStateChanged(ConnectState::Disconnected);
-            }
-          });
-  process->start(selectExecutor(), {"devices"});
-}
-
-void ProcessExecutor::stopPeriodicCheck() {
-  if (chekTimerPtr) {
-    chekTimerPtr->stop();
-    Logger::Tag("ProcessExecutor").i("Periodic connection check stopped");
-  }
 }
 
 void ProcessExecutor::disconnectDevice() {

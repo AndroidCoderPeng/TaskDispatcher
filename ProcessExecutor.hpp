@@ -17,10 +17,6 @@ public:
 
   void restartAdb();
 
-  void startPeriodicCheck(int intervalMs = 5000);
-
-  void stopPeriodicCheck();
-
   void disconnectDevice();
 
   void resolveLauncherActivity(
@@ -61,13 +57,19 @@ signals:
 private:
   QTimer *chekTimerPtr = nullptr;
   QString connectedDevice;
+  // 追踪上次状态
+  ConnectState lastKnownState = ConnectState::Disconnected;
 
   QString selectExecutor();
 
   // 条件化添加 -s <device>，当 connectedDevice 为空时不添加，让 adb 自动选设备
   QStringList appendArgs(const QStringList &args) const;
 
+  void startPeriodicCheck(int intervalMs = 3000);
+
   void checkConnectState();
+
+  void stopPeriodicCheck();
 };
 
 #endif // PROCESSEXECUTOR_HPP

@@ -990,14 +990,12 @@ void MainWindow::slotConnectStateChanged(ConnectState state) {
     ui->usbIconView->setPixmap(QPixmap(":/usb_connected.png"));
     ui->connectDeviceButton->setText("断开设备");
     ToastWidget::showInfo(this, "设备已通过 WiFi 连接，现在可以拔掉 USB 线了");
-    processExecutorPtr->startPeriodicCheck();
   } else if (state == ConnectState::Disconnected) {
     ui->usbIconView->setPixmap(QPixmap(":/usb_disconnected.png"));
     ui->connectDeviceButton->setText("连接设备");
 
     // 用户手动断开，不做任何自动操作
     if (disableAutoReconnect) {
-      processExecutorPtr->stopPeriodicCheck();
       return;
     }
 
@@ -1007,7 +1005,6 @@ void MainWindow::slotConnectStateChanged(ConnectState state) {
 
     const QJsonObject saved = ConfigStore::get().load("defaultIpConfig");
     if (!saved.contains("defaultIp")) {
-      processExecutorPtr->stopPeriodicCheck();
       return;
     }
 
@@ -1020,7 +1017,6 @@ void MainWindow::slotConnectStateChanged(ConnectState state) {
   } else if (state == ConnectState::ConnectFailed) {
     // 非自动重连场景（用户手动连接失败）
     if (!isAutoReconnecting) {
-      processExecutorPtr->stopPeriodicCheck();
       return;
     }
 
@@ -1038,7 +1034,6 @@ void MainWindow::slotConnectStateChanged(ConnectState state) {
       sendMessageToUser(
           "设备连接失败",
           "设备自动重连 3 次均失败，请检查设备网络连接后手动重连");
-      processExecutorPtr->stopPeriodicCheck();
     }
   }
 }
