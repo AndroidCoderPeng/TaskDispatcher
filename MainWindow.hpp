@@ -37,7 +37,7 @@ public slots:
   void slotNextTaskScheduled(int nextIndex, const QDateTime &predictedTime,
                              qint32 nextTaskId);
 
-  void slotAdbNotFound();
+  void slotExecutorNotFound();
 
   void slotConnectStateChanged(ConnectState state);
 

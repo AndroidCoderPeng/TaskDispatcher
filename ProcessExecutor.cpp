@@ -6,7 +6,7 @@
 #include <QDateTime>
 #include <QDir>
 #include <QFile>
-
+#include <QStandardPaths>
 #include <QTimer>
 #include <QtGlobal>
 
@@ -17,7 +17,7 @@ ProcessExecutor::ProcessExecutor(QObject *parent) : QObject(parent) {
       Logger::Tag("ProcessExecutor")
           .e("ADB not found in system PATH! "
              "Please install adb (Ubuntu: sudo apt install adb)");
-      emit signalAdbNotFound();
+      emit signalExecutorNotFound();
     }
   });
 #endif

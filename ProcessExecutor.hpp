@@ -44,7 +44,7 @@ public:
   void screenOff();
 
 signals:
-  void signalAdbNotFound();
+  void signalExecutorNotFound();
 
   void signalConnectStateChanged(ConnectState state);
 
