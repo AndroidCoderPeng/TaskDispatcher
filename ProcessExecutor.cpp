@@ -30,7 +30,7 @@ ProcessExecutor::ProcessExecutor(QObject *parent) : QObject(parent) {
 
 QString ProcessExecutor::selectExecutor() {
 #ifdef Q_OS_WIN
-  return QCoreApplication::applicationDirPath() + "/tool/windows/adb.exe";
+  return QCoreApplication::applicationDirPath() + "/tool/adb.exe";
 #else
   return "adb";
 #endif
