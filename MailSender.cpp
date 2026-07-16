@@ -103,11 +103,11 @@ void MailSender::sendAttachmentEmail(const QString &subject,
 }
 
 void MailSender::onConnected() {
-  Logger::Tag("MailSender").d("TCP connected, waiting for SSL handshake...");
+  Logger::Tag("MailSender").i("TCP connected, waiting for SSL handshake...");
 }
 
 void MailSender::onEncrypted() {
-  Logger::Tag("MailSender").d("SSL handshake completed");
+  Logger::Tag("MailSender").i("SSL handshake completed");
 }
 
 void MailSender::onReadyRead() {
@@ -208,7 +208,7 @@ void MailSender::handleSmtpResponse(int code) {
     } else {
       mailContent = buildMailContent(pendingSubject, pendingBody);
     }
-    Logger::Tag("MailSender").d("Sending mail content...");
+    Logger::Tag("MailSender").i("Sending mail content...");
     const QStringList lines = mailContent.split("\r\n");
     for (const QString &l : lines) {
       // SMTP 透明传输：行首的 . 需要转义为 ..

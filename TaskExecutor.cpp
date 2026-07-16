@@ -130,7 +130,7 @@ void TaskExecutor::onTimerTimeout() {
   // 第三层：检查是否为节假日
   if (skipHoliday &&
       ChinaHolidayManager::get()->isHoliday(QDate::currentDate())) {
-    Logger::Tag("TaskExecutor").d("检测到节假日，跳过今日所有任务");
+    Logger::Tag("TaskExecutor").i("检测到节假日，跳过今日所有任务");
     emit signalHolidaySkipped();
     waitForReset();
     return;

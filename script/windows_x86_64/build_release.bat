@@ -12,7 +12,7 @@ set PLUGIN_DIR=%QT_DIR%\plugins
 
 set PROJECT_DIR=D:\Code\QtProjects\TaskDispatcher
 set HTML_DIR=%PROJECT_DIR%\html
-set ADB_DIR=%PROJECT_DIR%\tool\windows
+set ADB_DIR=%PROJECT_DIR%\tool
 set BUILD_DIR=%PROJECT_DIR%\build\Desktop_Qt_5_15_2_MinGW_64_bit_Release\release
 set OUTPUT_EXE=TaskDispatcher.exe
 
@@ -56,7 +56,7 @@ cd /d "%TEMP_DIR%"
 echo.
 echo Copy ADB environment to temporary directory.
 echo.
-xcopy "%ADB_DIR%\*" "%TEMP_DIR%\tool\windows\" /E /I /Y
+xcopy "%ADB_DIR%\*" "%TEMP_DIR%\tool\" /E /I /Y
 
 echo.
 echo Copy HTML directory to temporary directory.

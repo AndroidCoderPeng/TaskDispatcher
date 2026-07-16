@@ -815,7 +815,7 @@ void MainWindow::showIpDialogForAutoConnect() {
     if (currentState == ConnectState::Disconnected) {
       // 已断开，直接连接
       Logger::Tag("MainWindow")
-          .iFmt("USB 已断开，立即 WiFi 连接: %s",
+          .dFmt("USB 已断开，立即 WiFi 连接: %s",
                 deviceIp.toStdString().c_str());
       isAutoReconnecting = true;
       reconnectRetryCount = 0;
@@ -1155,7 +1155,7 @@ void MainWindow::slotConnectStateChanged(ConnectState state) {
       if (saved.contains("defaultIp")) {
         const QString ip = saved["defaultIp"].toString();
         Logger::Tag("MainWindow")
-            .iFmt("USB 已断开，自动 WiFi 连接: %s", ip.toStdString().c_str());
+            .dFmt("USB 已断开，自动 WiFi 连接: %s", ip.toStdString().c_str());
         isAutoReconnecting = true;
         reconnectRetryCount = 0;
         processExecutorPtr->connectDevice(ip);
