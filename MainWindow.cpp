@@ -964,7 +964,9 @@ void MainWindow::slotTaskExecuted(const QDateTime &actualTime, qint32 taskId,
                                   int current, int total) {
   QJsonObject obj = ConfigStore::get().load("targetAppConfig");
   if (obj.isEmpty()) {
-    sendMessageToUser("任务执行失败", "未配置目标APP，无法执行后续步骤");
+    sendMessageToUser(
+        "任务执行失败",
+        "尚未配置目标应用（APP），无法执行后续步骤，请先在设置中完成配置。");
     return;
   }
 
@@ -1015,8 +1017,9 @@ void MainWindow::slotDayFinished() {
       widget->setActualTime(QTime());
     }
   }
-  sendMessageToUser("好消息",
-                    "当天所有任务执行完毕，休息一下吧~~祝你生活愉快！");
+  sendMessageToUser(
+      "今日任务全部完成",
+      "今天的全部任务已执行完毕，辛苦啦！好好休息一下，祝你生活愉快～");
 }
 
 void MainWindow::slotHolidaySkipped() {
@@ -1029,7 +1032,8 @@ void MainWindow::slotHolidaySkipped() {
       widget->setActualTime(QTime());
     }
   }
-  sendMessageToUser("普天同庆", "今天不上班~，出去玩玩吧！");
+  sendMessageToUser("今日休息，任务已跳过",
+                    "今天是休息日，已自动跳过今日全部任务，出去放松一下吧～");
 }
 
 #ifndef Q_OS_WIN
@@ -1104,9 +1108,9 @@ void MainWindow::slotConnectStateChanged(ConnectState state) {
     } else {
       Logger::Tag("MainWindow").w("自动重连 3 次均失败");
       isAutoReconnecting = false;
-      sendMessageToUser(
-          "设备连接失败",
-          "设备自动重连 3 次均失败，请检查设备网络连接后手动重连");
+      sendMessageToUser("设备连接失败",
+                        "设备已尝试自动重连 3 "
+                        "次，均未能成功连接，请及时到单位完成手动打卡。");
     }
     return;
   }
@@ -1124,9 +1128,8 @@ void MainWindow::slotConnectStateChanged(ConnectState state) {
     ui->connectDeviceButton->setText("断开设备");
     ui->connectDeviceButton->setEnabled(true);
     processExecutorPtr->getConnectedDeviceName([this](const QString &device) {
-      ui->usbStateView->setText(device.isEmpty()
-                                    ? "设备已连接"
-                                    : QString("%1 已连接").arg(device));
+      ui->usbStateView->setText(
+          device.isEmpty() ? "设备已连接" : QString("%1 已连接").arg(device));
     });
     ToastWidget::showInfo(this, "设备已通过 WiFi 连接");
     return;
@@ -1212,7 +1215,7 @@ void MainWindow::slotScreenCaptured(const QString &filePath) {
 
 void MainWindow::slotCaptureFailed(const QString &message) {
   ToastWidget::showError(this, message);
-  sendMessageToUser("截屏失败通知", message);
+  sendMessageToUser("截屏失败", message);
   pendingKillPackage.clear();
 }
 
@@ -1331,7 +1334,8 @@ void MainWindow::startTaskExecutor() {
             randomEnabled ? "是" : "否", randomMinutes,
             skipHoliday ? "是" : "否",
             resetTime.toString("HH:mm").toStdString().c_str());
-  sendMessageToUser("任务启动通知", "任务执行器已启动，开始新的一天任务");
+  sendMessageToUser("任务已启动",
+                    "任务执行器已成功启动，开始执行今日任务安排。");
 }
 
 void MainWindow::stopTask() {
