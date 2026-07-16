@@ -15,6 +15,8 @@ public:
 
   void initDebugPort(std::function<void(bool)> callback);
 
+  bool isWiFiConnected() const { return !connectedDevice.isEmpty(); }
+
   void restartAdb();
 
   void disconnectDevice();

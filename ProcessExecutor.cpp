@@ -77,16 +77,23 @@ void ProcessExecutor::checkConnectState() {
 
             if (devicePresent) {
               // 有设备在线
-              if (lastKnownState != ConnectState::Connected) {
-                if (!firstCheckDone) {
-                  // 程序启动后首次检测到设备，很可能是上次会话遗留的连接
-                  // 自动断开以重置连接状态，确保每次启动都从干净的连接开始
-                  firstCheckDone = true;
-                  Logger::Tag("ProcessExecutor")
-                      .i("Auto-disconnecting leftover connection from previous "
-                         "session");
-                  disconnectDevice();
-                } else if (lastKnownState != ConnectState::Connected) {
+              if (!firstCheckDone) {
+                // 程序启动后首次检测到设备，很可能是上次会话遗留的连接
+                // 自动断开以重置连接状态，确保每次启动都从干净的连接开始
+                firstCheckDone = true;
+                Logger::Tag("ProcessExecutor")
+                    .i("Auto-disconnecting leftover connection from previous "
+                       "session");
+                disconnectDevice();
+              } else if (connectedDevice.isEmpty()) {
+                // USB 设备在线，尚未建立 WiFi 连接
+                if (lastKnownState != ConnectState::UsbDetected) {
+                  lastKnownState = ConnectState::UsbDetected;
+                  emit signalConnectStateChanged(ConnectState::UsbDetected);
+                }
+              } else {
+                // WiFi 连接已建立
+                if (lastKnownState != ConnectState::Connected) {
                   lastKnownState = ConnectState::Connected;
                   emit signalConnectStateChanged(ConnectState::Connected);
                 }
@@ -261,11 +268,45 @@ void ProcessExecutor::connectDevice(const QString &deviceIp) {
           return;
         }
 
+        const QString output = process->readAllStandardOutput().trimmed();
         Logger::Tag("ProcessExecutor")
-            .iFmt("Successfully connected to device: %s",
-                  deviceIp.toStdString().c_str());
-        connectedDevice = deviceIp;
-        emit signalConnectStateChanged(ConnectState::Connected);
+            .dFmt("adb connect output: %s", output.toStdString().c_str());
+
+        // adb connect exitCode=0 不代表真正连上了，需要用 get-state 验证
+        QProcess *verify = new QProcess(this);
+        connect(
+            verify,
+            QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished), this,
+            [this, verify, deviceIp](int exitCode, QProcess::ExitStatus) {
+              verify->deleteLater();
+
+              if (exitCode != 0) {
+                const QString err = verify->readAllStandardError().trimmed();
+                Logger::Tag("ProcessExecutor")
+                    .eFmt("Device verification failed for %s: %s",
+                          deviceIp.toStdString().c_str(),
+                          err.toStdString().c_str());
+                emit signalConnectStateChanged(ConnectState::ConnectFailed);
+                return;
+              }
+
+              const QString state = verify->readAllStandardOutput().trimmed();
+              if (state != "device") {
+                Logger::Tag("ProcessExecutor")
+                    .eFmt("Device %s state is '%s', not 'device'",
+                          deviceIp.toStdString().c_str(),
+                          state.toStdString().c_str());
+                emit signalConnectStateChanged(ConnectState::ConnectFailed);
+                return;
+              }
+
+              Logger::Tag("ProcessExecutor")
+                  .iFmt("Device %s verified successfully",
+                        deviceIp.toStdString().c_str());
+              connectedDevice = deviceIp;
+              emit signalConnectStateChanged(ConnectState::Connected);
+            });
+        verify->start(selectExecutor(), {"-s", deviceIp, "get-state"});
       });
   process->start(selectExecutor(), {"connect", deviceIp});
 }
@@ -312,23 +353,24 @@ void ProcessExecutor::wakeUpDevice() {
         [this, wm](int, QProcess::ExitStatus) {
           wm->deleteLater();
           const QString output = wm->readAllStandardOutput().trimmed();
-          if (output.isEmpty()) {
-            Logger::Tag("ProcessExecutor")
-                .e("Failed to get screen size, output is empty");
-            emit signalConnectStateChanged(ConnectState::Disconnected);
-            return;
-          }
-          Logger::Tag("ProcessExecutor")
-              .dFmt("Screen size: %s", output.toStdString().c_str());
 
           int width = 720;
           int height = 1280;
-          // 解析 "Physical size: 1080x2400" 或 "1080x2400"
-          const QString sizeStr = output.section(':', -1).trimmed();
-          const QStringList wh = sizeStr.split('x');
-          if (wh.size() == 2) {
-            width = wh[0].toInt();
-            height = wh[1].toInt();
+          if (output.isEmpty()) {
+            // wm size 失败不代表 ADB 断开，使用默认分辨率继续，绝不误报
+            // Disconnected
+            Logger::Tag("ProcessExecutor")
+                .w("Failed to get screen size, using default 720x1280");
+          } else {
+            Logger::Tag("ProcessExecutor")
+                .dFmt("Screen size: %s", output.toStdString().c_str());
+            // 解析 "Physical size: 1080x2400" 或 "1080x2400"
+            const QString sizeStr = output.section(':', -1).trimmed();
+            const QStringList wh = sizeStr.split('x');
+            if (wh.size() == 2) {
+              width = wh[0].toInt();
+              height = wh[1].toInt();
+            }
           }
 
           // 从底部向上滑动解锁

@@ -762,42 +762,97 @@ void MainWindow::onAddTaskButtonClicked() {
 }
 
 void MainWindow::onConnectDeviceButtonClicked() {
-  if (currentState == ConnectState::Connected) {
-    // 手动断开，禁止后续自动重连
+  // WiFi 已连接 → 断开
+  if (currentState == ConnectState::Connected &&
+      processExecutorPtr->isWiFiConnected()) {
     disableAutoReconnect = true;
     processExecutorPtr->disconnectDevice();
-  } else {
-    // 手动连接，恢复自动重连能力
-    disableAutoReconnect = false;
-    isAutoReconnecting = false;
-    reconnectRetryCount = 0;
-    // 先执行 adb tcpip 5555
-    processExecutorPtr->initDebugPort([this](bool result) {
-      if (result) {
-        // 成功执行 adb tcpip 5555
-        QString defaultValue = "";
-        QJsonObject saved = ConfigStore::get().load("defaultIpConfig");
-        if (saved.contains("defaultIp")) {
-          defaultValue = saved["defaultIp"].toString();
-        }
+    return;
+  }
 
-        bool ok = false;
-        const QString deviceIp =
-            QInputDialog::getText(this, "无线连接", "请输入手机的局域网IP地址",
-                                  QLineEdit::Normal, defaultValue, &ok);
-        if (ok && !deviceIp.isEmpty()) {
-          processExecutorPtr->connectDevice(deviceIp);
-          QJsonObject obj;
-          obj["defaultIp"] = deviceIp;
-          ConfigStore::get().save("defaultIpConfig", obj);
+  // 未连接 → 发起 WiFi 连接
+  disableAutoReconnect = false;
+  isAutoReconnecting = false;
+  reconnectRetryCount = 0;
+
+  // USB 在线 → 静默初始化 tcpip 端口，然后弹 IP 对话框
+  if (currentState == ConnectState::UsbDetected) {
+    if (!tcpipInProgress) {
+      tcpipInProgress = true;
+      processExecutorPtr->initDebugPort([this](bool success) {
+        tcpipInProgress = false;
+        if (success) {
+          usbTcpipReady = true;
+          showIpDialogForAutoConnect();
         }
-      } else {
-        QMessageBox::critical(nullptr, "错误",
-                              "ADB 初始化失败，请重新插拔手机 USB "
-                              "线，并在手机上选择「传输文件」模式（非「仅充电」"
-                              "），确保已开启 USB 调试");
-      }
-    });
+      });
+    }
+    return;
+  }
+
+  // 无 USB → 直接弹 IP 对话框尝试 WiFi 连接
+  showIpInputAndConnect();
+}
+
+void MainWindow::showIpDialogForAutoConnect() {
+  QString defaultValue;
+  const QJsonObject saved = ConfigStore::get().load("defaultIpConfig");
+  if (saved.contains("defaultIp")) {
+    defaultValue = saved["defaultIp"].toString();
+  }
+
+  bool ok = false;
+  const QString deviceIp =
+      QInputDialog::getText(this, "无线连接", "请输入手机的局域网IP地址",
+                            QLineEdit::Normal, defaultValue, &ok);
+
+  if (ok && !deviceIp.isEmpty()) {
+    QJsonObject obj;
+    obj["defaultIp"] = deviceIp;
+    ConfigStore::get().save("defaultIpConfig", obj);
+
+    // 检查 USB 是否在用户输入期间已经断开
+    if (currentState == ConnectState::Disconnected) {
+      // 已断开，直接连接
+      Logger::Tag("MainWindow")
+          .iFmt("USB 已断开，立即 WiFi 连接: %s",
+                deviceIp.toStdString().c_str());
+      isAutoReconnecting = true;
+      reconnectRetryCount = 0;
+      processExecutorPtr->connectDevice(deviceIp);
+    } else {
+      // USB 仍连接，等待拔线
+      waitingForUsbDisconnect = true;
+      ui->usbStateView->setText("请拔掉 USB 线，将自动 WiFi 连接");
+      ToastWidget::showInfo(this,
+                            "IP 已保存，请拔掉 USB 线，将自动通过 WiFi 连接");
+    }
+  } else {
+    // 用户取消，不等待拔线（usbTcpipReady 保持 true 阻止轮询重复弹窗）
+  }
+}
+
+void MainWindow::showIpInputAndConnect() {
+  QString defaultValue = "";
+  QJsonObject saved = ConfigStore::get().load("defaultIpConfig");
+  if (saved.contains("defaultIp")) {
+    defaultValue = saved["defaultIp"].toString();
+  }
+
+  bool ok = false;
+  const QString deviceIp =
+      QInputDialog::getText(this, "无线连接", "请输入手机的局域网IP地址",
+                            QLineEdit::Normal, defaultValue, &ok);
+  if (ok && !deviceIp.isEmpty()) {
+    processExecutorPtr->connectDevice(deviceIp);
+    QJsonObject obj;
+    obj["defaultIp"] = deviceIp;
+    ConfigStore::get().save("defaultIpConfig", obj);
+  } else {
+    // 用户取消输入，恢复按钮状态
+    ui->connectDeviceButton->setEnabled(true);
+    ui->connectDeviceButton->setText("连接设备");
+    ui->usbStateView->setText("连接已取消");
   }
 }
 
@@ -987,51 +1042,53 @@ void MainWindow::slotExecutorNotFound() {
 
 void MainWindow::slotConnectStateChanged(ConnectState state) {
   currentState = state;
-  processExecutorPtr->getConnectedDeviceName(
-      [this, state](const QString &device) {
-        if (device.isEmpty()) {
-          ui->usbStateView->setText(
-              state == ConnectState::Connected ? "设备已连接" : "设备未连接");
-        } else {
-          ui->usbStateView->setText(state == ConnectState::Connected
-                                        ? QString("%1 已连接").arg(device)
-                                        : "设备未连接");
-        }
-      });
-  if (state == ConnectState::Connected) {
-    disableAutoReconnect = false;
-    isAutoReconnecting = false;
-    reconnectRetryCount = 0;
 
-    ui->usbIconView->setPixmap(QPixmap(":/usb_connected.png"));
-    ui->connectDeviceButton->setText("断开设备");
-    ToastWidget::showInfo(this, "设备已通过 WiFi 连接，现在可以拔掉 USB 线了");
-  } else if (state == ConnectState::Disconnected) {
+  // USB 检测到设备（仅初始化 adb 端口，不改变连接状态 UI）
+  if (state == ConnectState::UsbDetected) {
+    if (processExecutorPtr->isWiFiConnected()) {
+      return;
+    }
+    if (usbTcpipReady || tcpipInProgress) {
+      return;
+    }
+
+    // 静默通过 USB 执行 adb tcpip 5555，弹出 IP
+    // 对话框等待用户确认后拔线自动连接
+    tcpipInProgress = true;
+    Logger::Tag("MainWindow").i("USB 设备检测到，自动执行 tcpip 5555");
+    processExecutorPtr->initDebugPort([this](bool success) {
+      tcpipInProgress = false;
+      if (success) {
+        usbTcpipReady = true;
+        showIpDialogForAutoConnect();
+      } else {
+        Logger::Tag("MainWindow").w("tcpip 5555 执行失败");
+      }
+    });
+    return;
+  }
+
+  // ========== 正在 WiFi 连接中 ==========
+  if (state == ConnectState::Connecting) {
+    ui->usbIconView->setPixmap(QPixmap(":/usb_disconnected.png"));
+    ui->connectDeviceButton->setText("连接中...");
+    ui->connectDeviceButton->setEnabled(false);
+    ui->usbStateView->setText("正在连接...");
+    return;
+  }
+
+  // ========== WiFi 连接失败 ==========
+  if (state == ConnectState::ConnectFailed) {
+    usbTcpipReady = false;
+    tcpipInProgress = false;
+    waitingForUsbDisconnect = false;
+
     ui->usbIconView->setPixmap(QPixmap(":/usb_disconnected.png"));
     ui->connectDeviceButton->setText("连接设备");
+    ui->connectDeviceButton->setEnabled(true);
+    ui->usbStateView->setText("连接失败，请重试");
 
-    // 用户手动断开，不做任何自动操作
-    if (disableAutoReconnect) {
-      return;
-    }
-
-    // 已在自动重连中，忽略重复的断开通知
-    if (isAutoReconnecting)
-      return;
-
-    const QJsonObject saved = ConfigStore::get().load("defaultIpConfig");
-    if (!saved.contains("defaultIp")) {
-      return;
-    }
-
-    isAutoReconnecting = true;
-    reconnectRetryCount = 0;
-    const QString ip = saved["defaultIp"].toString();
-    Logger::Tag("MainWindow")
-        .dFmt("设备断开，尝试自动重连: %s", ip.toStdString().c_str());
-    processExecutorPtr->connectDevice(ip);
-  } else if (state == ConnectState::ConnectFailed) {
-    // 非自动重连场景（用户手动连接失败）
+    // 非自动重连场景（用户手动连接失败），直接返回
     if (!isAutoReconnecting) {
       return;
     }
@@ -1051,6 +1108,82 @@ void MainWindow::slotConnectStateChanged(ConnectState state) {
           "设备连接失败",
           "设备自动重连 3 次均失败，请检查设备网络连接后手动重连");
     }
+    return;
+  }
+
+  // ========== WiFi 已连接 ==========
+  if (state == ConnectState::Connected) {
+    disableAutoReconnect = false;
+    isAutoReconnecting = false;
+    reconnectRetryCount = 0;
+    usbTcpipReady = false;
+    tcpipInProgress = false;
+    waitingForUsbDisconnect = false;
+
+    ui->usbIconView->setPixmap(QPixmap(":/usb_connected.png"));
+    ui->connectDeviceButton->setText("断开设备");
+    ui->connectDeviceButton->setEnabled(true);
+    processExecutorPtr->getConnectedDeviceName([this](const QString &device) {
+      ui->usbStateView->setText(device.isEmpty()
+                                    ? "设备已连接"
+                                    : QString("%1 已连接").arg(device));
+    });
+    ToastWidget::showInfo(this, "设备已通过 WiFi 连接");
+    return;
+  }
+
+  // ========== 设备已断开 ==========
+  if (state == ConnectState::Disconnected) {
+    ui->usbIconView->setPixmap(QPixmap(":/usb_disconnected.png"));
+    ui->connectDeviceButton->setText("连接设备");
+    ui->connectDeviceButton->setEnabled(true);
+    ui->usbStateView->setText("设备未连接");
+
+    // 用户手动断开，不做任何自动操作
+    if (disableAutoReconnect) {
+      return;
+    }
+
+    // USB tcpip 就绪且用户已确认 IP，拔线后自动 WiFi 连接
+    if (usbTcpipReady && waitingForUsbDisconnect) {
+      usbTcpipReady = false;
+      waitingForUsbDisconnect = false;
+      const QJsonObject saved = ConfigStore::get().load("defaultIpConfig");
+      if (saved.contains("defaultIp")) {
+        const QString ip = saved["defaultIp"].toString();
+        Logger::Tag("MainWindow")
+            .iFmt("USB 已断开，自动 WiFi 连接: %s", ip.toStdString().c_str());
+        isAutoReconnecting = true;
+        reconnectRetryCount = 0;
+        processExecutorPtr->connectDevice(ip);
+        return;
+      }
+      Logger::Tag("MainWindow").w("USB 已断开但无已保存 IP，无法自动连接");
+      return;
+    }
+
+    // 非预期拔线（用户取消了 IP 对话框），重置 USB tcpip 状态以便重新插拔
+    if (usbTcpipReady) {
+      usbTcpipReady = false;
+    }
+
+    // 已在自动重连中，忽略重复的断开通知
+    if (isAutoReconnecting) {
+      return;
+    }
+
+    const QJsonObject saved = ConfigStore::get().load("defaultIpConfig");
+    if (!saved.contains("defaultIp")) {
+      return;
+    }
+
+    isAutoReconnecting = true;
+    reconnectRetryCount = 0;
+    const QString ip = saved["defaultIp"].toString();
+    Logger::Tag("MainWindow")
+        .dFmt("设备断开，尝试自动重连: %s", ip.toStdString().c_str());
+    processExecutorPtr->connectDevice(ip);
+    return;
   }
 }
 

@@ -81,6 +81,11 @@ private:
   int reconnectRetryCount = 0;
   bool disableAutoReconnect = false;
 
+  // USB 插入后自动 tcpip 5555 → 拔线自动 WiFi 连接
+  bool usbTcpipReady = false;
+  bool tcpipInProgress = false;
+  bool waitingForUsbDisconnect = false;
+
   // ====== 系统托盘 ======
   void setupSystemTray();
 
@@ -123,6 +128,12 @@ private:
   void onExecuteTaskButtonClicked();
   void onAddTaskButtonClicked();
   void onConnectDeviceButtonClicked();
+
+  // 弹出 IP 输入框并等待拔线后自动 WiFi 连接（USB 自动流程用）
+  void showIpDialogForAutoConnect();
+
+  // 弹出 IP 输入框并尝试 WiFi 连接（不依赖 USB）
+  void showIpInputAndConnect();
 
   // ====== 其他 ======
   void onNotifyMethodChanged();
