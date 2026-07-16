@@ -251,7 +251,7 @@ void ProcessExecutor::resolveLauncherActivity(
 void ProcessExecutor::connectDevice(const QString &deviceIp) {
   emit signalConnectStateChanged(ConnectState::Connecting);
   Logger::Tag("ProcessExecutor")
-      .iFmt("Connecting to device: %s", deviceIp.toStdString().c_str());
+      .dFmt("Connecting to device: %s", deviceIp.toStdString().c_str());
 
   QProcess *process = new QProcess(this);
   connect(
@@ -301,7 +301,7 @@ void ProcessExecutor::connectDevice(const QString &deviceIp) {
               }
 
               Logger::Tag("ProcessExecutor")
-                  .iFmt("Device %s verified successfully",
+                  .dFmt("Device %s verified successfully",
                         deviceIp.toStdString().c_str());
               connectedDevice = deviceIp;
               emit signalConnectStateChanged(ConnectState::Connected);
