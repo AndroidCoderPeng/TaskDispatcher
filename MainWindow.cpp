@@ -1196,18 +1196,16 @@ void MainWindow::slotScreenCaptured(const QString &filePath) {
   const auto bytes = ImageProcessor::get()->compressImage(filePath);
   sendMessageToUser(bytes);
 
-  // 如果是任务自动流程，等待 15s 后杀掉目标APP
+  // 如果是任务自动流程，等待 10s 后杀掉目标APP
   if (!pendingKillPackage.isEmpty()) {
     const QString package = pendingKillPackage;
     pendingKillPackage.clear();
 
     Logger::Tag("MainWindow")
-        .dFmt("截屏完成，等待 15 秒后杀掉应用: %s",
+        .dFmt("截屏完成，等待 10 秒后杀掉应用: %s",
               package.toStdString().c_str());
 
-    QTimer::singleShot(15000, this, [this, package]() {
-      Logger::Tag("MainWindow")
-          .dFmt("15 秒到，杀死应用: %s", package.toStdString().c_str());
+    QTimer::singleShot(10000, this, [this, package]() {
       processExecutorPtr->killTargetApp(package);
     });
   }
@@ -1226,7 +1224,7 @@ void MainWindow::slotOpenAppSuccess() {
   }
 
   // 读取 delay 配置，延迟后截屏
-  int delaySeconds = 30;
+  int delaySeconds = 15;
   {
     const QJsonObject saved = ConfigStore::get().load("delayTimeConfig");
     if (saved.contains("seconds")) {
@@ -1329,13 +1327,37 @@ void MainWindow::startTaskExecutor() {
   taskExecutorPtr->setResetTime(resetTime);
   taskExecutorPtr->start();
 
-  Logger::Tag("MainWindow")
-      .dFmt("执行器配置: 随机=%s (%d分钟), 跳过节假日=%s, 重置时间=%s",
-            randomEnabled ? "是" : "否", randomMinutes,
-            skipHoliday ? "是" : "否",
-            resetTime.toString("HH:mm").toStdString().c_str());
-  sendMessageToUser("任务已启动",
-                    "任务执行器已成功启动，开始执行今日任务安排。");
+  // 构建今日任务摘要
+  const auto taskList = taskExecutorPtr->scheduledTasksWithActualTime();
+  const QTime now = QTime::currentTime();
+  QStringList taskLines;
+  int pendingIndex = -1;
+
+  for (int i = 0; i < taskList.size(); ++i) {
+    const Task &task = taskList[i].first;
+    const QDateTime &actualTime = taskList[i].second;
+    const QString planStr = task.scheduledTime.toString("HH:mm:ss");
+    const QString actualStr = actualTime.toString("HH:mm:ss");
+
+    QString displayTime = QString("%1（实际 %2）").arg(planStr, actualStr);
+    if (pendingIndex == -1 && actualTime.time() > now) {
+      taskLines << QString("%1. %2  ← 即将执行").arg(i + 1).arg(displayTime);
+      pendingIndex = i;
+    } else {
+      taskLines << QString("%1. %2").arg(i + 1).arg(displayTime);
+    }
+  }
+
+  QString summary;
+  if (taskList.isEmpty()) {
+    summary = "任务执行器已启动，当前无任务安排。";
+  } else {
+    summary = QString("任务执行器已启动，今日共 %1 项任务：\n\n%2")
+                  .arg(taskList.size())
+                  .arg(taskLines.join('\n'));
+  }
+
+  sendMessageToUser("任务已启动", summary);
 }
 
 void MainWindow::stopTask() {
@@ -1358,11 +1380,6 @@ void MainWindow::stopTask() {
 
 void MainWindow::sendMessageToUser(const QString &title,
                                    const QString &message) {
-  Logger::Tag("MainWindow")
-      .box()
-      .add(title.toStdString().c_str())
-      .add(message.toStdString().c_str())
-      .print();
   const QJsonObject saved = ConfigStore::get().load("notifyMethodConfig");
   const QString method =
       saved.contains("method") ? saved["method"].toString() : QString();

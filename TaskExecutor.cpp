@@ -205,6 +205,17 @@ void TaskExecutor::stop() {
 
 bool TaskExecutor::isRunning() const { return running; }
 
+QList<QPair<Task, QDateTime>>
+TaskExecutor::scheduledTasksWithActualTime() const {
+  QList<QPair<Task, QDateTime>> result;
+  for (const Task &task : tasks) {
+    QDateTime actual = task.scheduledTime;
+    actual = actual.addSecs(randomOffset(task.id));
+    result.append({task, actual});
+  }
+  return result;
+}
+
 void TaskExecutor::executeNextTask() {
   if (!running || currentIndex >= tasks.size()) {
     // 所有任务执行完毕

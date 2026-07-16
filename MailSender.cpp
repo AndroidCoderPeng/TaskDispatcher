@@ -115,7 +115,6 @@ void MailSender::onReadyRead() {
 
   while (socketPtr->canReadLine()) {
     QString line = QString::fromUtf8(socketPtr->readLine()).trimmed();
-    Logger::Tag("MailSender").dFmt("Received: %s", line.toStdString().c_str());
 
     int code = line.leftRef(3).toInt();
     if (code == 0) {
@@ -244,7 +243,6 @@ void MailSender::handleSmtpResponse(int code) {
 }
 
 void MailSender::sendCommand(const QString &cmd) {
-  Logger::Tag("MailSender").dFmt("Sending: %s", cmd.toStdString().c_str());
   socketPtr->write(cmd.toUtf8() + "\r\n");
   socketPtr->flush();
 }

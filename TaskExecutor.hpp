@@ -27,6 +27,8 @@ public:
 
   bool isRunning() const;
 
+  QList<QPair<Task, QDateTime>> scheduledTasksWithActualTime() const;
+
 signals:
   // 单个任务节点触发：实际执行时间、任务ID、当前进度(1-based)、任务总数
   void signalTaskExecuted(const QDateTime &actualTime, qint32 taskId,
